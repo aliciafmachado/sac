@@ -2,11 +2,11 @@
 Random agent for baseline and testing.
 """
 
-from agent import Agent
+from base_agent import Agent, Trajectory
 from acme import specs, types
 import chex
 from typing import *
-from ..utils.trajectory import Trajectory
+
 
 class RandomAgent(Agent):
   def __init__(self, environment_spec: specs.EnvironmentSpec) -> None:

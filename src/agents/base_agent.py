@@ -5,6 +5,19 @@ Abstract agent to build off of.
 # This code is not authoral: taken from TD3
 import abc
 
+from acme import types
+import chex
+from typing import Mapping
+
+
+@chex.dataclass
+class Trajectory:
+  observations: types.NestedArray  # [T, B, ...]
+  actions: types.NestedArray  # [T, B, ...]
+  rewards: chex.ArrayNumpy  # [T, B]
+  dones: chex.ArrayNumpy  # [T, B]
+  discounts: chex.ArrayNumpy # [T, B]
+
 class Agent(abc.ABC):
     @abc.abstractmethod
     def learner_step(self, trajectory: Trajectory) -> Mapping[str, chex.ArrayNumpy]:
