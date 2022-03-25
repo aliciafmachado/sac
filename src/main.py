@@ -2,20 +2,31 @@
 Main file for passing the parameters and calling training.
 """
 
-import argparse
+from absl import flags
+from ml_collections import config_flags
+from src.train_agent import train
+from src.agents.sac import SAC
+import tensorflow as tf
+from absl import app
 
 
-parser = argparse.ArgumentParser(description='Training SAC agent.')
-parser.add_argument('--env', type=str, default='Pendulum-v0')
-parser.add_argument('--seed', type=int, default=42, metavar='N',
-                    help='random seed (default: 42)')
-args = parser.parse_args()
+FLAGS = flags.FLAGS
+
+config_flags.DEFINE_config_file(
+    'config',
+    "configs/default.py",
+    'File path to the default configuration file.',
+    lock_config=True)
 
 
-def __main__():
-    # TODO: pass arguments to training function and call training of agent
-    pass
+def main(argv):
+    # Make sure tf does not allocate gpu memory.
+    tf.config.experimental.set_visible_devices([], 'GPU')
+    config = FLAGS.config
+    model = SAC(config)
+    # Call training of SAC agent
+    train(model, config)
 
 
-if __name__ == "__main__":
-    __main__()
+if __name__ == '__main__':
+  app.run(main)
