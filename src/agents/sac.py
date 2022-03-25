@@ -44,14 +44,32 @@ class SAC(Agent):
         self.q2 = None
         self.policy = None
 
-    def batched_actor_step(self, observation: types.NestedArray) -> types.NestedArray:
-        """
-        Returns random actions in response to batch of observations.
-        """
-        return jax.vmap(jnp.random.randn(*self.action_spec.shape))(observation)
+    def loss_fn_q():
+        # TODO
+        pass
 
-    def learner_step(self, trajectory: Trajectory) -> Mapping[str, chex.ArrayNumpy]:
+    def loss_fn_policy():
+        # TODO
+        pass
+
+    def loss_fn_value():
+        # TODO
+        pass
+
+    def update_fn(self, trajectory: Trajectory) -> Mapping[str, chex.ArrayNumpy]:
         """
         Returns empty dictionary since this agent doesn't learn.
         """
+        # TODO
         return dict()
+
+    def evaluate():
+        pass
+ 
+    # # The fn below is not useful since it's for an online policy
+    # TODO: refactor base agent (abstract class)
+    # def batched_actor_step(self, observation: types.NestedArray) -> types.NestedArray:
+    #     """
+    #     Returns random actions in response to batch of observations.
+    #     """
+    #     pass
