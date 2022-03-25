@@ -18,12 +18,16 @@ class Trajectory:
   dones: chex.ArrayNumpy  # [T, B]
   discounts: chex.ArrayNumpy # [T, B]
 
+
 class Agent(abc.ABC):
     @abc.abstractmethod
     def learner_step(self, trajectory: Trajectory) -> Mapping[str, chex.ArrayNumpy]:
         """One step of learning on a trajectory.
         
         The mapping returned can contain various logs.
+
+        TODO: Trajectory is not exactly what it receives. Should we create a new class
+        that is Batched_Trajectory?
         """
         pass
 
