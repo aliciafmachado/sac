@@ -1,5 +1,5 @@
 """
-Pendulum-v0 environment.
+Inverted-Pendulum-v2 environment.
 """
 
 from acme import specs
@@ -9,10 +9,10 @@ import dm_env
 import gym
 import numpy as np
 
-# Pendulum environment
-class PendulumEnv(dm_env.Environment):
+# Inverted_Pendulum environment
+class InvertedPendulumEnv(dm_env.Environment):
   def __init__(self, for_evaluation: bool) -> None:
-    self._env = gym.make('Pendulum-v0')
+    self._env = gym.make('InvertedPendulum-v2')
     self._for_evaluation = for_evaluation
     if self._for_evaluation:
       self.screens = []
@@ -32,10 +32,10 @@ class PendulumEnv(dm_env.Environment):
     return dm_env.restart(obs)
 
   def observation_spec(self) -> specs.BoundedArray:
-    return specs.BoundedArray(shape=(3,), minimum=-8., maximum=8., dtype=np.float32)
+    return specs.BoundedArray(shape=(4,), minimum=-float("inf"), maximum=float("inf"), dtype=np.float64)
 
   def action_spec(self) -> specs.BoundedArray:
-    return specs.BoundedArray(shape=(1,), minimum=-2., maximum=2., dtype=np.float32)
+    return specs.BoundedArray(shape=(1,), minimum=-3., maximum=3., dtype=np.float32)
 
   def close(self) -> None:
     self._env.close()
