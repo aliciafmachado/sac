@@ -25,6 +25,8 @@ def main(argv):
     config = FLAGS.config
     model = SAC(config)
     # Call training of SAC agent
+    # Config example of usage on:
+    # https://github.com/google/flax/blob/390383830bd2de784994d4d961e1ffc42a249962/examples/ppo/ppo_lib.py#L277
     train(model, config)
 
 
