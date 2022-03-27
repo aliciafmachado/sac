@@ -8,15 +8,7 @@ import abc
 from acme import types
 import chex
 from typing import Mapping
-
-
-@chex.dataclass
-class Transitions:
-  observations: types.NestedArray  # [T, B, ...]
-  actions: types.NestedArray  # [T, B, ...]
-  next_observations: types.NestedArray  # [T, B, ...]
-  rewards: chex.ArrayNumpy  # [T, B]
-  dones: chex.ArrayNumpy  # [T, B]
+from src.utils.training_utils import Transitions
 
 
 class Agent(abc.ABC):

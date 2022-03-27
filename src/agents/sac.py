@@ -3,7 +3,7 @@ SAC agent.
 """
 
 from os import environ
-from src.agents.base_agent import Agent, Transitions
+from src.agents.base_agent import Agent
 from acme import specs, types
 import chex
 from typing import *
@@ -14,7 +14,7 @@ from ml_collections import ConfigDict
 import optax
 from typing import *
 from src.replay_buffers.buffer import ReplayBuffer
-from src.utils.training_utils import LearnerState
+from src.utils.training_utils import LearnerState, ParamState, OptState, Transitions
 from src.agents.networks import ValueNetwork, SoftQNetwork, PolicyNetwork
 
 # TODO: fix what the functions receive as input and what they return
@@ -83,14 +83,18 @@ class SAC(Agent):
         # Create replay buffer
         self.buffer = ReplayBuffer(self.config.replay_buffer_capacity)
 
-        # Initialize LearnerState
         # Create dummy inputs to initialize neural networks
         dummy_obs = jnp.expand_dims(jnp.zeros(self.environment_spec.observations.shape), axis=0)
         dummy_actions = jnp.expand_dims(jnp.zeros(self.environment_spec.actions.shape), axis=0)
+        self.initialize = lambda rng: self.init_fn(rng, dummy_obs, dummy_actions)
 
-        # Call initialization
-        self._rng, key = jax.random.split(self._rng, 2)
-        self.learner_state = self.init_fn(key, dummy_obs, dummy_actions)
+        # Call initialization of learner state in the train loop
+        # self._rng, key = jax.random.split(self._rng, 2)
+        # learner_state = self.initialize(key)
+        # learner_state_target = self.initialize(key)
+        # ...
+        # update_fn(learner_state, learner_state_target, transitions)
+        # ...
         
 
     def _init_fn(self, rng: chex.PRNGKey, dummy_obs: types.NestedArray, 
@@ -100,25 +104,26 @@ class SAC(Agent):
         """
         key_q1, key_q2, key_value, key_policy = jax.random.split(rng, 4)
 
-        # TODO: do we add the optimizer state in Learner state as well?
         # Creating parameters
         q1_params = self._init_q(key_q1, dummy_obs, dummy_actions)
         q2_params = self._init_q(key_q2, dummy_obs, dummy_actions)
-        v_params=self._init_value(key_value, dummy_obs)
-        policy_params=self._init_policy(key_policy, dummy_obs)
+        v_params = self._init_value(key_value, dummy_obs)
+        policy_params = self._init_policy(key_policy, dummy_obs)
+
+        # Creating opt states
+        q1_opt_state = self.optimizer_q.init(q1_params),
+        q2_opt_state = self.optimizer_q.init(q2_params),
+        v_opt_state = self.optimizer_v.init(v_params),
+        policy_opt_state = self.optimizer_policy.init(policy_params),
 
         return LearnerState(
-            q1_params=q1_params,
-            q2_params=q2_params,
-            v_params=v_params,
-            policy_params=policy_params,
-            q1_opt_state=self.optimizer_q.init(q1_params),
-            q2_opt_state=self.optimizer_q.init(q2_params),
-            v_opt_state=self.optimizer_v.init(v_params),
-            policy_opt_state=self.optimizer_policy.init(policy_params),
+            params=ParamState(q1=q1_params, q2=q2_params, v=v_params, policy=policy_params),
+            opt_state=OptState(q1=q1_opt_state, q2=q2_opt_state, v=v_opt_state, policy=policy_opt_state),
         )
 
-    def _loss_fn_q(self, learner_state: LearnerState, transitions: Transitions):
+    def _loss_fn_q(self, curr_ps: ParamState, 
+                         target_ps: ParamState,
+                         transitions: Transitions):
         """
         Loss function for Q networks.
         """
@@ -126,7 +131,9 @@ class SAC(Agent):
         # TODO
         pass
 
-    def _loss_fn_pi(self, learner_state: LearnerState, transitions: Transitions):
+    def _loss_fn_pi(self, curr_ps: ParamState, 
+                         target_ps: ParamState,
+                         transitions: Transitions):
         """
         Loss function for policy network.
         """
@@ -134,7 +141,9 @@ class SAC(Agent):
         # TODO
         pass
 
-    def _loss_fn_v(self, learner_state: LearnerState, transitions: Transitions):
+    def _loss_fn_v(self, curr_ps: ParamState, 
+                         target_ps: ParamState,
+                         transitions: Transitions):
         """
         Loss function for value network.
         """
@@ -149,8 +158,8 @@ class SAC(Agent):
 
         pass
 
-    def _update_fn(self, learner_state: LearnerState,
-                         learner_state_target: LearnerState,
+    def _update_fn(self, curr_ls: LearnerState,
+                         target_ls: LearnerState,
                          transitions: Transitions) -> Tuple[LearnerState, LogsDict]:
         """
         Update function.
@@ -159,14 +168,14 @@ class SAC(Agent):
         # TODO: freeze other neural networks when updating a specific one
         ### Q network update
         # TODO: check if this is correct (need to return grad of q1 and q2)
-        (loss_q1, loss_q2), (grad_q1, grad_q2) = self._grad_q(learner_state, transitions)
+        (loss_q1, loss_q2), (grad_q1, grad_q2) = self._grad_q(curr_ls.params, target_ls.params, transitions)
 
         # Apply gradients
-        updates, learner_state.q1_opt_state = self.optimizer_q.update(grad_q1, learner_state.q1_opt_state)
-        learner_state.q1_params = optax.apply_updates(learner_state.q1_params, updates)
+        updates, curr_ls.opt_state.q1 = self.optimizer_q.update(grad_q1, curr_ls.opt_state.q1)
+        curr_ls.params.q1 = optax.apply_updates(curr_ls.params.q1, updates)
 
-        updates, learner_state.q2_opt_state = self.optimizer_q.update(grad_q2, learner_state.q2_opt_state)
-        learner_state.q2_params = optax.apply_updates(learner_state.q2_params, updates)
+        updates, curr_ls.opt_state.q2 = self.optimizer_q.update(grad_q2, curr_ls.opt_state.q2)
+        curr_ls.params.q2 = optax.apply_updates(curr_ls.params.q2, updates)
 
         # Freeze update on value function
 
@@ -175,30 +184,32 @@ class SAC(Agent):
         # Stop update of Q parameters
 
         ### Policy network update
-        loss_pi, grad_pi = self._grad_pi(learner_state, transitions)
+        loss_pi, grad_pi = self._grad_pi(curr_ls.params, transitions)
 
         # Apply gradients
-        updates, learner_state.policy_opt_state = self.optimizer_q.update(grad_pi, 
-                                                            learner_state.policy_opt_state)
-        learner_state.policy_params = optax.apply_updates(learner_state.policy_params, updates)
+        updates, curr_ls.opt_state.policy = self.optimizer_q.update(grad_pi, 
+                                                            curr_ls.opt_state.policy)
+        curr_ls.params.policy = optax.apply_updates(curr_ls.params.policy, updates)
 
         ### Value network update
-        loss_v, grad_v = self._grad_v(learner_state, transitions)
+        loss_v, grad_v = self._grad_v(curr_ls.params, transitions)
 
         # Apply gradients
-        updates, learner_state.v_opt_state = self.optimizer_q.update(grad_v, 
-                                                            learner_state.v_opt_state)
-        learner_state.v_params = optax.apply_updates(learner_state.v_params, updates)
+        updates, curr_ls.opt_state.v = self.optimizer_q.update(grad_v, 
+                                                            curr_ls.opt_state.v)
+        curr_ls.params.v = optax.apply_updates(curr_ls.params.v, updates)
 
         # Unfreeze update of Q parameters
 
         ### Target network update with polyak averaging
+        target_ls.params = jax.tree_multimap(lambda x, y: x + (1 - self.config.target_ema) * (y - x),
+                                    target_ls.params, curr_ls.params)
         
 
         # TODO: add logs
         logs = dict()
 
-        return learner_state, logs
+        return curr_ls, target_ls, logs
 
     def _hk_apply_policy(self, observations: types.NestedArray) -> types.NestedArray:
         return PolicyNetwork([256, 256], self.environment_spec.actions)(observations)
