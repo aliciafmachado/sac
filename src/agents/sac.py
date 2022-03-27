@@ -12,6 +12,7 @@ from jax import numpy as jnp
 import haiku as hk
 from ml_collections import ConfigDict
 import optax
+import rlax
 from typing import *
 from src.replay_buffers.buffer import ReplayBuffer
 from src.utils.training_utils import LearnerState, ParamState, OptState, Transitions
@@ -20,6 +21,7 @@ from src.agents.networks import ValueNetwork, SoftQNetwork, PolicyNetwork
 # TODO: fix what the functions receive as input and what they return
 # TODO: test functions and check if jit works properly in the class
 # TODO: add done to replay buffer
+# TODO: rescale rewards
 
 
 class SAC(Agent):
@@ -146,36 +148,59 @@ class SAC(Agent):
         q1_loss = 0.5 * jnp.mean(jnp.square(td_error_q1))
         q2_loss = 0.5 * jnp.mean(jnp.square(td_error_q2))
 
-        return q1_loss, q2_loss
+        return q1_loss + q2_loss
 
-    def _loss_fn_pi(self, curr_ps: ParamState, 
-                         target_ps: ParamState,
+    def _loss_fn_pi(self, mu: types.NestedArray, 
+                         sigma: types.NestedArray,
+                         curr_ps: ParamState,
                          transitions: Transitions):
         """
         Loss function for policy network.
         """
-        # Element-wise minimum for stability                                                           
-        # predicted_q_value = jax.lax.min(predicted_q1_value, predicted_q2_value)
+        self._rng, key = jax.random.split(self._rng, 2)
+        new_actions = rlax.gaussian_diagonal().sample(key, mu, sigma)
+        predicted_new_q_value = self.apply_q1(curr_ps.q1, transitions.observations, new_actions)
+        action_log_probs = rlax.gaussian_diagonal().logprob(transitions.actions, mu, sigma)
 
-        # TODO
-        pass
+        # TODO: add regularization loss
+        policy_loss = jnp.mean(action_log_probs - predicted_new_q_value)
 
-    def _loss_fn_v(self, curr_ps: ParamState, 
-                         target_ps: ParamState,
+        return policy_loss
+
+    def _loss_fn_v(self, mu: types.NestedArray, 
+                         sigma: types.NestedArray,
+                         curr_ps: ParamState,
                          transitions: Transitions):
         """
         Loss function for value network.
         """
+        # Spliy random number generator
+        self._rng, key = jax.random.split(self._rng, 2)
 
-        # TODO: extract observation from transition
-        # out = self.value(observations)
-        # actions, log_pi = self.policy(observations)
-        # log_target_1 = self.q1(observations, actions)
-        # log_target_2 = self.q2(observations, actions)
-        # min_log_target = jnp.minimum(log_target_1, log_target_2)
-        # Reparameterize: todo ??
+        # Apply policy
+        # TODO: check self.gaussian_diagonal()
+        action_log_probs = rlax.gaussian_diagonal().logprob(transitions.actions, mu, sigma)
+        # entropies = rlax.gaussian_diagonal().entropy(mu, sigma)
+        new_actions = rlax.gaussian_diagonal().sample(key, mu, sigma)
 
-        pass
+        # Calculate predicted q value
+        q1_pi = self.apply_q1(curr_ps.q1, transitions.observations, new_actions)
+        q2_pi = self.apply_q2(curr_ps.q2, transitions.observations, new_actions)
+
+        # Element wise minimum for stability
+        q_pi = jax.lax.min(q1_pi, q2_pi)
+        target_value_func = q_pi - action_log_probs
+        target_value_func = jax.lax.stop_gradient(target_value_func)
+
+        predicted_value = self.apply_value(curr_ps.v, transitions.next_observations)
+
+        error = predicted_value - target_value_func
+
+        # Compute the L2 error in expectation
+        loss = 0.5 * jnp.square(error)
+        loss = jnp.mean(loss)
+
+        return loss
 
     def _update_fn(self, curr_ls: LearnerState,
                          target_ls: LearnerState,
@@ -187,17 +212,19 @@ class SAC(Agent):
         # TODO: freeze other neural networks when updating a specific one
         ### Q network update
         # TODO: check if this is correct (need to return grad of q1 and q2)
-        (loss_q1, loss_q2), (grad_q1, grad_q2) = self._grad_q(curr_ls.params, target_ls.params, transitions)
+        loss_q, grad_q = self._grad_q(curr_ls.params, target_ls.params, transitions)
 
-        # Apply gradients
-        updates, curr_ls.opt_state.q1 = self.optimizer_q.update(grad_q1, curr_ls.opt_state.q1)
+        # Apply gradients TODO check if this way is okay
+        updates, curr_ls.opt_state.q1 = self.optimizer_q.update(grad_q, curr_ls.opt_state.q1)
         curr_ls.params.q1 = optax.apply_updates(curr_ls.params.q1, updates)
 
-        updates, curr_ls.opt_state.q2 = self.optimizer_q.update(grad_q2, curr_ls.opt_state.q2)
+        updates, curr_ls.opt_state.q2 = self.optimizer_q.update(grad_q, curr_ls.opt_state.q2)
         curr_ls.params.q2 = optax.apply_updates(curr_ls.params.q2, updates)
 
         ### Policy network update
-        loss_pi, grad_pi = self._grad_pi(curr_ls.params, transitions)
+        # First calculate mu and sigma:
+        mu, sigma = self.apply_policy(curr_ls.params.policy, transitions.observations)
+        loss_pi, grad_pi = self._grad_pi(mu, sigma, curr_ls.params, transitions)
 
         # Apply gradients
         updates, curr_ls.opt_state.policy = self.optimizer_q.update(grad_pi, 
@@ -205,7 +232,7 @@ class SAC(Agent):
         curr_ls.params.policy = optax.apply_updates(curr_ls.params.policy, updates)
 
         ### Value network update
-        loss_v, grad_v = self._grad_v(curr_ls.params, transitions)
+        loss_v, grad_v = self._grad_v(mu, sigma, curr_ls.params, transitions)
 
         # Apply gradients
         updates, curr_ls.opt_state.v = self.optimizer_q.update(grad_v, 
