@@ -9,9 +9,11 @@ from src.agents.sac import SAC
 from src.envs.inverted_pendulum import InvertedPendulumEnv
 from src.envs.pendulum import PendulumEnv
 from src.envs.reacher import ReacherEnv
+from src.utils.training_utils import Transitions
 import tensorflow as tf
 from absl import app
 import acme
+from jax import numpy as jnp
 
 FLAGS = flags.FLAGS
 
@@ -37,6 +39,8 @@ def main(argv):
     env = environment(for_evaluation=False)
     environment_spec = acme.make_environment_spec(env)
     model = SAC(environment_spec, config)
+
+    # model._update_fn(ls, transitions)
     # Call training of SAC agent
     # Config example of usage on:
     # https://github.com/google/flax/blob/390383830bd2de784994d4d961e1ffc42a249962/examples/ppo/ppo_lib.py#L277

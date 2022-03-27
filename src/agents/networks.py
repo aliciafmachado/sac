@@ -6,6 +6,7 @@ import haiku as hk
 import jax
 import jax.numpy as jnp
 import jax.random as random
+import numpy as np
 import chex
 from acme import specs
 from typing import *
@@ -47,7 +48,7 @@ class PolicyNetwork(hk.Module):
 
   def __call__(self, x: chex.Array, ) -> Tuple[chex.Array, chex.Array]:
     action_shape = self._action_spec.shape
-    action_dims = jnp.prod(action_shape)
+    action_dims = np.prod(np.array(action_shape))
     h = x
     for i, o in enumerate(self._output_sizes):
       h = hk.Linear(o)(h)

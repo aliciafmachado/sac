@@ -12,6 +12,7 @@ class ParamState:
   v: types.NestedArray  
   q1: types.NestedArray  
   q2: types.NestedArray
+  v_target: types.NestedArray
 
 @chex.dataclass
 class OptState:

@@ -31,6 +31,9 @@ def get_config():
 
     # Seed
     config.seed = 42
+
+    # Gamma
+    config.gamma = 0.99
     # TODO: complete and check the hyperparameters
 
     # Replay buffer capacity
