@@ -2,7 +2,7 @@
 Random agent for baseline and testing.
 """
 
-from src.agents.base_agent import Agent, Trajectory
+from src.agents.base_agent import Agent, Transitions
 from acme import specs, types
 import chex
 from typing import *
@@ -26,7 +26,7 @@ class RandomAgent(Agent):
     batch_size = jnp.shape(observation)[0]
     return jax.random.uniform(subkey, (batch_size, *self.action_spec.shape))
 
-  def learner_step(self, trajectory: Trajectory) -> Mapping[str, chex.ArrayNumpy]:
+  def learner_step(self, transitions: Transitions) -> Mapping[str, chex.ArrayNumpy]:
     """
     Returns empty dictionary since this agent doesn't learn.
     """

@@ -2,7 +2,7 @@
 Abstract agent to build off of.
 """
 
-# This code is not authoral: taken from TD3
+# This code is not authoral: taken from TD3 and modified
 import abc
 
 from acme import types
@@ -11,23 +11,20 @@ from typing import Mapping
 
 
 @chex.dataclass
-class Trajectory:
+class Transitions:
   observations: types.NestedArray  # [T, B, ...]
   actions: types.NestedArray  # [T, B, ...]
+  next_observations: types.NestedArray  # [T, B, ...]
   rewards: chex.ArrayNumpy  # [T, B]
   dones: chex.ArrayNumpy  # [T, B]
-  discounts: chex.ArrayNumpy # [T, B]
 
 
 class Agent(abc.ABC):
     @abc.abstractmethod
-    def learner_step(self, trajectory: Trajectory) -> Mapping[str, chex.ArrayNumpy]:
+    def learner_step(self, transitions: Transitions) -> Mapping[str, chex.ArrayNumpy]:
         """One step of learning on a trajectory.
         
         The mapping returned can contain various logs.
-
-        TODO: Trajectory is not exactly what it receives. Should we create a new class
-        that is Batched_Trajectory?
         """
         pass
 
