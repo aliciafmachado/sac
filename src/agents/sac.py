@@ -20,8 +20,6 @@ from src.agents.networks import ValueNetwork, SoftQNetwork, PolicyNetwork
 # TODO: fix what the functions receive as input and what they return
 # TODO: test functions and check if jit works properly in the class
 # TODO: add done to replay buffer
-# TODO: I think that the learnerstate should not be part of the class
-# but i'm not entirely sure how to deal with the target network...
 
 
 class SAC(Agent):
