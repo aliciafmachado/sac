@@ -92,6 +92,7 @@ class SAC(Agent):
         # self._rng, key = jax.random.split(self._rng, 2)
         # learner_state = self.initialize(key)
         # learner_state_target = self.initialize(key)
+        # q_t_target = jax.lax.stop_gradient(q_t_target)
         # ...
         # update_fn(learner_state, learner_state_target, transitions)
         # ...
@@ -127,9 +128,27 @@ class SAC(Agent):
         """
         Loss function for Q networks.
         """
+        # Calculate target value using target nn
+        target_value    = self.apply_value(target_ps.v, transitions.next_observations)
+        target_q_value  = jax.lax.stop_gradient(target_value)
+        target_q_value = (1. - transitions.dones[..., None]) * target_value
+        target_q_value  = transitions.rewards + self.config.gamma * target_value
 
-        # TODO
-        pass
+        # Calculate predicted q values using current nn
+        predicted_q1_value = self.apply_q1(curr_ps.params.q1, transitions.observations,
+                                                           transitions.actions)
+        predicted_q2_value = self.apply_q1(curr_ps.params.q2, transitions.observations,
+                                                           transitions.actions)
+
+        # TD error
+        td_error_q1 = target_q_value - predicted_q1_value
+        td_error_q2 = target_q_value - predicted_q2_value
+
+        # Loss for q1 and q2
+        q1_loss = 0.5 * jnp.mean(jnp.square(td_error_q1))
+        q2_loss = 0.5 * jnp.mean(jnp.square(td_error_q2))
+
+        return q1_loss, q2_loss
 
     def _loss_fn_pi(self, curr_ps: ParamState, 
                          target_ps: ParamState,
@@ -137,6 +156,8 @@ class SAC(Agent):
         """
         Loss function for policy network.
         """
+        # Element-wise minimum for stability                                                           
+        # predicted_q_value = jax.lax.min(predicted_q1_value, predicted_q2_value)
 
         # TODO
         pass
@@ -177,12 +198,6 @@ class SAC(Agent):
         updates, curr_ls.opt_state.q2 = self.optimizer_q.update(grad_q2, curr_ls.opt_state.q2)
         curr_ls.params.q2 = optax.apply_updates(curr_ls.params.q2, updates)
 
-        # Freeze update on value function
-
-        # Unfreeze update on value function
-
-        # Stop update of Q parameters
-
         ### Policy network update
         loss_pi, grad_pi = self._grad_pi(curr_ls.params, transitions)
 
@@ -199,13 +214,10 @@ class SAC(Agent):
                                                             curr_ls.opt_state.v)
         curr_ls.params.v = optax.apply_updates(curr_ls.params.v, updates)
 
-        # Unfreeze update of Q parameters
-
         ### Target network update with polyak averaging
         target_ls.params = jax.tree_multimap(lambda x, y: x + (1 - self.config.target_ema) * (y - x),
                                     target_ls.params, curr_ls.params)
         
-
         # TODO: add logs
         logs = dict()
 
