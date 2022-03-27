@@ -24,7 +24,7 @@ from src.agents.networks import ValueNetwork, SoftQNetwork, PolicyNetwork
 # TODO: rescale rewards
 
 
-class SAC(Agent):
+class SAC:
     """
     Soft Actor Critic according to:
 
@@ -72,16 +72,19 @@ class SAC(Agent):
         self.update_fn = jax.jit(self._update_fn)
         self.apply_policy = jax.jit(self._apply_policy)
         self.apply_value = jax.jit(self._apply_value)
-        self.apply_q1 = jax.jit(self._apply_q1)
-        self.apply_q2 = jax.jit(self._apply_q2)
+        self.apply_q = jax.jit(self._apply_q)
 
         # Create optimizers
-        self.optimizer_q = optax.adam(self.config.learning_rate_q)
-        self.optimizer_v = optax.adam(self.config.learning_rate_v)
-        self.optimizer_p = optax.adam(self.config.learning_rate_p)
+        self.optimizer_q = optax.adam(self.config.q_lr)
+        self.optimizer_v = optax.adam(self.config.v_lr)
+        self.optimizer_p = optax.adam(self.config.p_lr)
         
         # Create replay buffer
-        self.buffer = ReplayBuffer(self.config.replay_buffer_capacity)
+        self.action_dim = environment_spec.actions.shape[-1]
+        self.observation_dim = environment_spec.observations.shape[-1]
+        self.buffer = ReplayBuffer(size_=self.config.replay_buffer_capacity,
+                                   featuredim_=self.observation_dim, 
+                                   actiondim_=self.action_dim)
 
         # Create dummy inputs to initialize neural networks
         dummy_obs = jnp.expand_dims(jnp.zeros(self.environment_spec.observations.shape), axis=0)
@@ -135,9 +138,9 @@ class SAC(Agent):
         target_q_value  = transitions.rewards + self.config.gamma * target_value
 
         # Calculate predicted q values using current nn
-        predicted_q1_value = self.apply_q1(curr_ps.params.q1, transitions.observations,
+        predicted_q1_value = self.apply_q(curr_ps.params.q1, transitions.observations,
                                                            transitions.actions)
-        predicted_q2_value = self.apply_q1(curr_ps.params.q2, transitions.observations,
+        predicted_q2_value = self.apply_q(curr_ps.params.q2, transitions.observations,
                                                            transitions.actions)
 
         # TD error
@@ -159,7 +162,7 @@ class SAC(Agent):
         """
         self._rng, key = jax.random.split(self._rng, 2)
         new_actions = rlax.gaussian_diagonal().sample(key, mu, sigma)
-        predicted_new_q_value = self.apply_q1(curr_ps.q1, transitions.observations, new_actions)
+        predicted_new_q_value = self.apply_q(curr_ps.q1, transitions.observations, new_actions)
         action_log_probs = rlax.gaussian_diagonal().logprob(transitions.actions, mu, sigma)
 
         # TODO: add regularization loss
@@ -184,8 +187,8 @@ class SAC(Agent):
         new_actions = rlax.gaussian_diagonal().sample(key, mu, sigma)
 
         # Calculate predicted q value
-        q1_pi = self.apply_q1(curr_ps.q1, transitions.observations, new_actions)
-        q2_pi = self.apply_q2(curr_ps.q2, transitions.observations, new_actions)
+        q1_pi = self.apply_q(curr_ps.q1, transitions.observations, new_actions)
+        q2_pi = self.apply_q(curr_ps.q2, transitions.observations, new_actions)
 
         # Element wise minimum for stability
         q_pi = jax.lax.min(q1_pi, q2_pi)
@@ -204,7 +207,7 @@ class SAC(Agent):
 
     def _update_fn(self, curr_ls: LearnerState,
                          target_ls: LearnerState,
-                         transitions: Transitions) -> Tuple[LearnerState, LogsDict]:
+                         transitions: Transitions) -> Tuple[LearnerState, Dict[str, float]]:
         """
         Update function.
         """

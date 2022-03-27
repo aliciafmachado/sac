@@ -17,14 +17,23 @@ def get_config():
     config.alpha = 0.2
 
     # Learning rate for the policy
-    config.policy_lr = 3e-4
+    config.p_lr = 3e-4
 
     # Learning rate for the value function
-    config.value_lr = 3e-4
+    config.v_lr = 3e-4
 
     # Learning rate for the q networks
     config.q_lr = 3e-4
 
+    # Choose environment
+    # check main.py to see mapping of integers to envs
+    config.env_idx = 0
+
+    # Seed
+    config.seed = 42
     # TODO: complete and check the hyperparameters
+
+    # Replay buffer capacity
+    config.replay_buffer_capacity = 10000
 
     return config
