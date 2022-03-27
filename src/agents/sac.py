@@ -15,60 +15,13 @@ import optax
 from typing import *
 from src.replay_buffers.buffer import ReplayBuffer
 from src.utils.training_utils import LearnerState
+from src.agents.networks import ValueNetwork, SoftQNetwork, PolicyNetwork
 
 # TODO: fix what the functions receive as input and what they return
 # TODO: test functions and check if jit works properly in the class
 # TODO: add done to replay buffer
 # TODO: I think that the learnerstate should not be part of the class
 # but i'm not entirely sure how to deal with the target network...
-
-
-class ValueNetwork(hk.Module):
-  def __init__(self, output_sizes: Sequence[int], name: Optional[str] = None) -> None:
-    super().__init__(name=name)
-    self._output_sizes = output_sizes
-
-  def __call__(self, observations: chex.Array) -> chex.Array:
-    h = observations
-
-    for i, o in enumerate(self._output_sizes):
-      h = hk.Linear(o)(h)
-      h = hk.LayerNorm(axis=-1, create_scale=True, create_offset=True)(h)
-      h = jax.nn.relu(h)
-    return hk.Linear(1)(h)[..., 0]
-
-class SoftQNetwork(hk.Module):
-  def __init__(self, output_sizes: Sequence[int], name: Optional[str] = None) -> None:
-    super().__init__(name=name)
-    self._output_sizes = output_sizes
-
-  def __call__(self, observations: chex.Array, actions: chex.Array) -> chex.Array:
-    h = jnp.concatenate([observations, actions], axis=1)
-
-    for i, o in enumerate(self._output_sizes):
-      h = hk.Linear(o)(h)
-      h = hk.LayerNorm(axis=-1, create_scale=True, create_offset=True)(h)
-      h = jax.nn.relu(h)
-    return hk.Linear(1)(h)[..., 0]
-
-class PolicyNetwork(hk.Module):
-  def __init__(self, output_sizes: Sequence[int], action_spec: specs.BoundedArray, name: Optional[str] = None) -> None:
-    super().__init__(name=name)
-    self._output_sizes = output_sizes
-    self._action_spec = action_spec
-
-  def __call__(self, x: chex.Array, ) -> Tuple[chex.Array, chex.Array]:
-    action_shape = self._action_spec.shape
-    action_dims = jnp.prod(action_shape)
-    h = x
-    for i, o in enumerate(self._output_sizes):
-      h = hk.Linear(o)(h)
-      h = hk.LayerNorm(axis=-1, create_scale=True, create_offset=True)(h)
-      h = jax.nn.relu(h)
-    h = hk.Linear(2 * action_dims)(h)
-    mu, pre_sigma = jnp.split(h, 2, axis=-1)
-    sigma = jax.nn.softplus(pre_sigma)
-    return hk.Reshape(action_shape)(.1 * mu), hk.Reshape(action_shape)(.1 * sigma)
 
 
 class SAC(Agent):
@@ -107,10 +60,14 @@ class SAC(Agent):
         self._init_value, self._apply_value = hk.without_apply_rng(hk.transform(self._hk_apply_value))
         self._init_q, self._apply_q = hk.without_apply_rng(hk.transform(self._hk_apply_q))
 
-        # TODO: check how the init_loss, apply_loss, and grad would work in this structure:
-        # self._init_loss, apply_loss = hk.without_apply_rng(hk.transform(self._loss_function))
-
+        # Loss functions and their grads
+        # We use value_and_grad so that we can log the loss
+        self._grad_q = jax.value_and_grad(self._loss_fn_q)
+        self._grad_v = jax.value_and_grad(self._loss_fn_v)
+        self._grad_pi = jax.value_and_grad(self._loss_fn_pi)
+        
         # Jit functions
+        # TODO: Do we really need to jit them if we already jit self.update_fn?
         self.init_fn = jax.jit(self._init_fn)
         self.update_fn = jax.jit(self._update_fn)
         self.apply_policy = jax.jit(self._apply_policy)
@@ -200,13 +157,42 @@ class SAC(Agent):
         """
         # TODO: add target network argument to loss functions above
         # TODO: freeze other neural networks when updating a specific one
-        # Q network update
+        ### Q network update
+        # TODO: check if this is correct (need to return grad of q1 and q2)
+        (loss_q1, loss_q2), (grad_q1, grad_q2) = self._grad_q(learner_state, transitions)
 
-        # Value network update
+        # Apply gradients
+        updates, learner_state.q1_opt_state = self.optimizer_q.update(grad_q1, learner_state.q1_opt_state)
+        learner_state.q1_params = optax.apply_updates(learner_state.q1_params, updates)
 
-        # Policy network update
+        updates, learner_state.q2_opt_state = self.optimizer_q.update(grad_q2, learner_state.q2_opt_state)
+        learner_state.q2_params = optax.apply_updates(learner_state.q2_params, updates)
 
-        # Target network update
+        # Freeze update on value function
+
+        # Unfreeze update on value function
+
+        # Stop update of Q parameters
+
+        ### Policy network update
+        loss_pi, grad_pi = self._grad_pi(learner_state, transitions)
+
+        # Apply gradients
+        updates, learner_state.policy_opt_state = self.optimizer_q.update(grad_pi, 
+                                                            learner_state.policy_opt_state)
+        learner_state.policy_params = optax.apply_updates(learner_state.policy_params, updates)
+
+        ### Value network update
+        loss_v, grad_v = self._grad_v(learner_state, transitions)
+
+        # Apply gradients
+        updates, learner_state.v_opt_state = self.optimizer_q.update(grad_v, 
+                                                            learner_state.v_opt_state)
+        learner_state.v_params = optax.apply_updates(learner_state.v_params, updates)
+
+        # Unfreeze update of Q parameters
+
+        ### Target network update with polyak averaging
         
 
         # TODO: add logs
