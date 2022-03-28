@@ -69,7 +69,7 @@ def train_loop( environment,
 
       # Generate an action from the agent's policy and step the environment.
       mu, sigma = agent.apply_policy(learner_state.params.policy, obs) 
-      stand_gaussian = jax.random.normal(rng, agent.action_dim) 
+      stand_gaussian = jax.random.normal(rng, (agent.action_dim,))
       action = (mu + sigma @ stand_gaussian)
       timestep = environment.step(action) 
 
