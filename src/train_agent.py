@@ -98,4 +98,4 @@ def interaction_loop( environment,
     # store returns
     all_returns.append(episode_return)
 
-  return all_returns, all_logs, num_total_steps
+  return all_returns, all_logs, num_total_steps, learner_state
