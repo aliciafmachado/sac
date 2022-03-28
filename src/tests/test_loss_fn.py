@@ -72,7 +72,12 @@ def main(argv):
     # print(model._loss_fn_v(mu, sigma, ls.params, transitions).item())
     # print(model._loss_fn_pi(mu, sigma, ls.params, transitions).item())
 
-    model.update_fn(ls, transitions)
+    ls, logs = model.update_fn(ls, transitions)
+    print(logs)
+    ls, logs = model.update_fn(ls, transitions)
+    print(logs)
+    ls, logs = model.update_fn(ls, transitions)
+    print(logs)
 
 
 if __name__ == '__main__':
