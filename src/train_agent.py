@@ -6,6 +6,7 @@ Script for training and saving the agent.
 def train(model, env, config):
     pass
 
+# Works fine, Discuss buffer update
 def train_loop( environment, 
                       agent,
                       rng,
@@ -81,7 +82,7 @@ def train_loop( environment,
           for nb_updates in range(number_updates): 
 
               transitions = agent.buffer.sample(batch_size)
-              learner_state, logs = agent.update(learner_state, transitions)
+              learner_state, logs = agent._update_fn(learner_state, transitions)
 
               all_logs.append(logs)
 
