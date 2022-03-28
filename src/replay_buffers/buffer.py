@@ -1,8 +1,6 @@
 import chex
 import jax.numpy as jnp
 import numpy as np
-from src.utils.training_utils import Transitions
-
 
 
 class ReplayBuffer:
@@ -28,16 +26,14 @@ class ReplayBuffer:
         else:
             index = self.__counter
 
-        self.__states.at[index].set(state)
-        self.__next_states.at[index].set(next_state)
-        self.__actions.at[index].set(action)
-        self.__rewards.at[index].set(reward)
-        self.__dones.at[index].set(done)
+        self.__states = self.__states.at[index].set(state)
+        self.__next_states = self.__next_states.at[index].set(next_state)
+        self.__actions = self.__actions.at[index].set(action)
+        self.__rewards = self.__rewards.at[index].set(reward)
+        self.__dones = self.__dones.at[index].set(done)
 
         # Increment counter
         self.__counter += 1
-
-        return 0
 
     def sample(self, batch_size: int) -> Transitions:
 
@@ -64,18 +60,4 @@ class ReplayBuffer:
 
     def __len__(self):
       return self.__counter
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
