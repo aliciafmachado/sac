@@ -223,13 +223,14 @@ class SAC:
         # TODO: add target network argument to loss functions above
         # TODO: freeze other neural networks when updating a specific one
         ### Q network update
-        loss_q, grad_q = self._grad_q(curr_ls.params.q1, curr_ls.params.q2, curr_ls.params.v_target, transitions)
+        loss_q1, grad_q1 = self._grad_q1(curr_ls.params.q1, curr_ls.params.q2, curr_ls.params.v_target, transitions)
+        loss_q2, grad_q2 = self._grad_q2(curr_ls.params.q1, curr_ls.params.q2, curr_ls.params.v_target, transitions)
 
         # Apply gradients TODO check if this way is okay
-        updates, curr_ls.opt_state.q1 = self.optimizer_q.update(grad_q, curr_ls.opt_state.q1)
+        updates, curr_ls.opt_state.q1 = self.optimizer_q.update(grad_q1, curr_ls.opt_state.q1)
         curr_ls.params.q1 = optax.apply_updates(curr_ls.params.q1, updates)
 
-        updates, curr_ls.opt_state.q2 = self.optimizer_q.update(grad_q, curr_ls.opt_state.q2)
+        updates, curr_ls.opt_state.q2 = self.optimizer_q.update(grad_q2, curr_ls.opt_state.q2)
         curr_ls.params.q2 = optax.apply_updates(curr_ls.params.q2, updates)
 
         ### Policy network update
