@@ -62,12 +62,12 @@ class SAC:
 
         # Loss functions and their grads
         # We use value_and_grad so that we can log the loss
-        self._grad_q = jax.value_and_grad(self._loss_fn_q)
+        self._grad_q1 = jax.value_and_grad(self._loss_fn_q, argnums=0)
+        self._grad_q2 = jax.value_and_grad(self._loss_fn_q, argnums=1)
         self._grad_v = jax.value_and_grad(self._loss_fn_v)
         self._grad_pi = jax.value_and_grad(self._loss_fn_pi)
         
         # Jit functions
-        # TODO: Do we really need to jit them if we already jit self.update_fn?
         self.init_fn = jax.jit(self._init_fn)
         self.update_fn = jax.jit(self._update_fn)
         self.apply_policy = jax.jit(self._apply_policy)
@@ -223,7 +223,6 @@ class SAC:
         # TODO: add target network argument to loss functions above
         # TODO: freeze other neural networks when updating a specific one
         ### Q network update
-        # TODO: check if this is correct (need to return grad of q1 and q2)
         loss_q, grad_q = self._grad_q(curr_ls.params.q1, curr_ls.params.q2, curr_ls.params.v_target, transitions)
 
         # Apply gradients TODO check if this way is okay
