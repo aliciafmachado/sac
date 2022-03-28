@@ -18,7 +18,6 @@ class ReplayBuffer:
         self.__actions = jnp.zeros((size_, actiondim_))
         self.__rewards = jnp.zeros(size_)
         self.__dones = jnp.zeros(size_, dtype=bool)
-        self.__output = Transitions()
 
     def store(self, state: chex.Array, action: chex.Array, reward: float, next_state: chex.Array, done: bool):
 
@@ -47,13 +46,13 @@ class ReplayBuffer:
         idx_ = np.random.choice(memory_, batch_size)
 
         # return batch sample
-        self.__output.observations = self.__states[idx_]
-        self.__output.actions = self.__actions[idx_]
-        self.__output.rewards = self.__rewards[idx_]
-        self.__output.next_observations = self.__next_states[idx_]
-        self.__output.dones = self.__dones[idx_]
-
-        return self.__output
+        return Transitions(
+          observations = self.__states[idx_],
+          actions = self.__actions[idx_],
+          rewards = self.__rewards[idx_],
+          next_observations = self.__next_states[idx_],
+          dones = self.__dones[idx_],
+        )
 
     def buffer_state(self):
 

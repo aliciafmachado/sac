@@ -256,7 +256,11 @@ class SAC:
                                     curr_ls.params.v_target, curr_ls.params.v)
         
         # TODO: add logs
-        logs = dict()
+        logs = {
+          "loss_q": loss_q1,
+          'loss_pi': loss_pi,
+          "loss_v": loss_v,
+        }
 
         return curr_ls, logs
 
