@@ -62,6 +62,9 @@ class ReplayBuffer:
         else:
             print('Buffer full')
 
+    def __len__(self):
+      return self.__counter
+
 
 
 

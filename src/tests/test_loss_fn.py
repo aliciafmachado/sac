@@ -72,12 +72,10 @@ def main(argv):
     # print(model._loss_fn_v(mu, sigma, ls.params, transitions).item())
     # print(model._loss_fn_pi(mu, sigma, ls.params, transitions).item())
 
-    ls, logs = model.update_fn(ls, transitions)
-    print(logs)
-    ls, logs = model.update_fn(ls, transitions)
-    print(logs)
-    ls, logs = model.update_fn(ls, transitions)
-    print(logs)
+    n_updates = 100
+    for i in range(n_updates):
+      ls, logs = model.update_fn(ls, transitions)
+      print(logs)
 
 
 if __name__ == '__main__':
