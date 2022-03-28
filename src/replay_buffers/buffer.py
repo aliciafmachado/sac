@@ -1,6 +1,7 @@
 import chex
 import jax.numpy as jnp
 import numpy as np
+from src.utils.training_utils import Transitions
 
 
 class ReplayBuffer:
