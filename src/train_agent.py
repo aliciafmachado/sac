@@ -6,7 +6,7 @@ Script for training and saving the agent.
 def train(model, env, config):
     pass
 
-# Works fine, Discuss buffer update
+# Discuss buffer update
 def train_loop( environment, 
                       agent,
                       rng,
