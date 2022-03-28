@@ -14,16 +14,16 @@ def get_config():
     config.batch_size = 32
     
     # Alpha for rescaling rewards
-    config.alpha = 0.2
+    config.scale_reward = 1.
 
     # Learning rate for the policy
-    config.p_lr = 3e-4
+    config.p_lr = 3e-3
 
     # Learning rate for the value function
-    config.v_lr = 3e-4
+    config.v_lr = 3e-3
 
     # Learning rate for the q networks
-    config.q_lr = 3e-4
+    config.q_lr = 3e-3
 
     # Choose environment
     # check main.py to see mapping of integers to envs
@@ -38,5 +38,8 @@ def get_config():
 
     # Replay buffer capacity
     config.replay_buffer_capacity = 10000
+
+    # Hyperparameter for update of target network
+    config.tau = 0.01
 
     return config

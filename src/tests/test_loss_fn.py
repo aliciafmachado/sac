@@ -65,12 +65,12 @@ def main(argv):
       dones=fake_dones,
     )
 
-    print(model._loss_fn_q(ls.params, transitions).item())
+    # print(model._loss_fn_q(ls.params, transitions).item())
 
-    mu, sigma = model.apply_policy(ls.params.policy, fake_obs)
+    # mu, sigma = model.apply_policy(ls.params.policy, fake_obs)
 
-    print(model._loss_fn_v(mu, sigma, ls.params, transitions).item())
-    print(model._loss_fn_pi(mu, sigma, ls.params, transitions).item())
+    # print(model._loss_fn_v(mu, sigma, ls.params, transitions).item())
+    # print(model._loss_fn_pi(mu, sigma, ls.params, transitions).item())
 
     model.update_fn(ls, transitions)
 
