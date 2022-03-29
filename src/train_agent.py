@@ -19,6 +19,7 @@ def train( environment,
                       batch_size=10,
                       nb_updated_transitions=2,
                       exploratory_policy_steps=200,
+                      nb_training_steps=None,
                       verbose=True,
                       ):
   """Perform the interaction loop.
@@ -43,6 +44,7 @@ def train( environment,
     batch_size: size of the training batch
     nb_updated_transitions: (after the buffer is filled completely) number of updated transitions to make before updating the model
     exploratory_policy_steps: nb of steps to explore using uniformly sampled actions
+    nb_training_steps: nb of steps to interact with the env
     verbose: set true if you want to debug
   """
   # logger = loggers.TerminalLogger(label=label, time_delta=logger_time_delta)
@@ -57,6 +59,7 @@ def train( environment,
   # number of updated transitions
   nb_up_transitions = 0
 
+  # for episode in iterator:
   for episode in iterator:
 
     # Reset any counts and start the environment.
@@ -83,10 +86,9 @@ def train( environment,
 
       else:
         # Generate an action from the agent's policy and step the environment.
-        mu, sigma = agent.apply_policy(learner_state.params.policy, obs)
+        # mu, sigma = agent.apply_policy(learner_state.params.policy, obs)
         rng, key = jax.random.split(rng, 2)
-        stand_gaussian = jax.random.normal(key, (agent.action_dim,))
-        action = (mu + sigma @ stand_gaussian)
+        action = agent.get_action(key, learner_state.params.policy, obs)
       
       timestep = environment.step(action)
 

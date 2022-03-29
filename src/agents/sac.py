@@ -73,12 +73,13 @@ class SAC:
         self.apply_policy = jax.jit(self._apply_policy)
         self.apply_value = jax.jit(self._apply_value)
         self.apply_q = jax.jit(self._apply_q)
+        self.get_action = jax.jit(self._get_action, static_argnums=3)
 
         # Create optimizers
         self.optimizer_q = optax.adam(self.config.q_lr)
         self.optimizer_v = optax.adam(self.config.v_lr)
         self.optimizer_p = optax.adam(self.config.p_lr)
-        
+
         # Create replay buffer
         self.action_dim = environment_spec.actions.shape[-1]
         self.observation_dim = environment_spec.observations.shape[-1]
@@ -167,10 +168,10 @@ class SAC:
         """
         mu, sigma = self.apply_policy(policy_params, transitions.observations)
         self._rng, key = jax.random.split(self._rng, 2)
-        new_actions = rlax.gaussian_diagonal().sample(key, mu, sigma)
+        new_actions = self._sample_action(key, mu, sigma)
         predicted_new_q_value = self.apply_q(q1_params, transitions.observations, new_actions)
         # action_log_probs = rlax.gaussian_diagonal().logprob(transitions.actions, mu, sigma)
-        action_log_probs = rlax.gaussian_diagonal().logprob(new_actions, mu, sigma)
+        action_log_probs = self._get_logprob(new_actions, mu, sigma)
 
         policy_loss = jnp.mean(action_log_probs - predicted_new_q_value)
 
@@ -189,12 +190,12 @@ class SAC:
 
         # Split random number generator
         self._rng, key = jax.random.split(self._rng, 2)
-        new_actions = rlax.gaussian_diagonal().sample(key, mu, sigma)
+        new_actions = self._sample_action(key, mu, sigma)
 
         # Apply policy
         # TODO: check self.gaussian_diagonal()
         # action_log_probs = rlax.gaussian_diagonal().logprob(transitions.actions, mu, sigma)
-        action_log_probs = rlax.gaussian_diagonal().logprob(new_actions, mu, sigma)
+        action_log_probs = self._get_logprob(new_actions, mu, sigma)
         # entropies = rlax.gaussian_diagonal().entropy(mu, sigma) ### use for logging
         # new_actions = rlax.gaussian_diagonal().sample(key, mu, sigma)
 
@@ -272,8 +273,20 @@ class SAC:
     def _hk_apply_value(self, observations: types.NestedArray) -> types.NestedArray:
         return ValueNetwork([256, 256])(observations)
 
-    def _batched_actor_step(self, observation: types.NestedArray) -> types.NestedArray:
-        """
-        Returns random actions in response to batch of observations.
-        """
-        pass
+    def _get_action(self, key: chex.ArrayNumpy,
+                          policy_params: types.NestedArray, 
+                          observations: types.NestedArray,
+                          deterministic=False) -> types.NestedArray:
+      mu, sigma = self.apply_policy(policy_params, observations)
+      if deterministic:
+        return mu
+      return self._sample_action(key, mu, sigma)
+
+    def _sample_action(self, key: chex.ArrayNumpy,
+                             mu: types.NestedArray, 
+                             sigma: types.NestedArray) -> types.NestedArray:
+      return rlax.squashed_gaussian().sample(key, mu, sigma, self.environment_spec.actions)
+
+    def _get_logprob(self, actions: types.NestedArray, mu: types.NestedArray, 
+                     sigma: types.NestedArray) -> types.NestedArray:
+      return rlax.squashed_gaussian().logprob(actions, mu, sigma, self.environment_spec.actions)
