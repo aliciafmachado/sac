@@ -9,14 +9,13 @@ from src.agents.sac import SAC
 from src.envs.inverted_pendulum import InvertedPendulumEnv
 from src.envs.pendulum import PendulumEnv
 from src.envs.reacher import ReacherEnv
-from src.utils.training_utils import Transitions
 import tensorflow as tf
 from absl import app
+import jax
 import acme
-from jax import numpy as jnp
+
 
 FLAGS = flags.FLAGS
-
 config_flags.DEFINE_config_file(
     'config',
     "src/configs/default.py",
@@ -35,17 +34,31 @@ def main(argv):
     # Make sure tf does not allocate gpu memory.
     tf.config.experimental.set_visible_devices([], 'GPU')
     config = FLAGS.config
+    rng = jax.random.PRNGKey(0)
     environment = environments[config.env_idx]
     env = environment(for_evaluation=False)
     environment_spec = acme.make_environment_spec(env)
+
     model = SAC(environment_spec, config)
 
     # model._update_fn(ls, transitions)
     # Call training of SAC agent
     # Config example of usage on:
     # https://github.com/google/flax/blob/390383830bd2de784994d4d961e1ffc42a249962/examples/ppo/ppo_lib.py#L277
-    train(model, env, config)
 
+    all_returns, all_logs, num_total_steps, learner_state = train( environment = env,
+                      agent = model,
+                      rng = rng,
+                      num_episodes=5,
+                      num_steps=1,
+                      buffer_capacity=50,
+                      number_updates=1,
+                      batch_size=10,
+                      nb_updated_transitions=1
+                      )
+
+
+    print('done')
 
 if __name__ == '__main__':
   app.run(main)
