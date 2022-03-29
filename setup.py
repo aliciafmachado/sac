@@ -6,7 +6,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 setuptools.setup(
     name="sac-jax",
     version="0.0.1",
-    author="Alicia Fortes Machado & Ivelina Stoyanova & Félix Lefebvre & Ramzi Dakhmouche",
+    author="Alicia Fortes Machado & Ivelina Stoyanova & Félix Lefebvre & Ramzi Dakhmouche & Yacine Bouaouni",
     author_email="aliciafortesmachado@gmail.com",
     description="Jax implementation of Soft Actor Critic.",
     long_description=long_description,
@@ -22,7 +22,7 @@ setuptools.setup(
     package_dir={"sac": "src"},
     # where="src"
     packages=setuptools.find_packages(),
-    python_requires=">=3.7",
+    python_requires=">=3.8",
     # install_requires=[
     #             'gym',
     #             'matplotlib',
