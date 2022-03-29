@@ -1,10 +1,13 @@
 """
 Default hyperparameters for Inverted pendulum env.
+
+The hyperparameters are the same as in rl-baselines3-zoo:
+https://github.com/DLR-RM/rl-baselines3-zoo/blob/master/hyperparams/sac.yml
 """
 
 import ml_collections
 
-# TODO: add different configurations depending on the environment
+
 def get_config():
     """
     Get the default configuration.
@@ -32,16 +35,21 @@ def get_config():
     # check main.py to see mapping of integers to envs
     config.env_idx = 1
 
-    # train_freq: 8
-    # gradient_steps: 8
-    # learning_starts: 10000
-
     # Minimum on buffer size before training
     config.min_buffer_capacity = 10000
 
     # Use exploratory policy for the same number of steps
     # as the config min buffer
     config.exp_policy_steps = config.min_buffer_capacity
+
+    # Number of updates when doing the update on the nns
+    config.number_updates = 8
+
+    # Number steps until updating again
+    config.nb_updated_transitions = 8
+
+    # Total number of steps in the environment
+    config.num_total_steps = int(3e5)
 
     # Seed
     config.seed = 42
@@ -54,5 +62,9 @@ def get_config():
 
     # Hyperparameter for update of target network
     config.tau = 0.02
+
+    # Number episodes if not using number of steps
+    # CAUTION: not tuned
+    config.num_episodes = 500000
 
     return config

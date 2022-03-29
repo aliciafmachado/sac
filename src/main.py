@@ -45,12 +45,13 @@ def main(argv):
     all_returns, all_logs, num_total_steps, learner_state = train( environment = env,
                       agent = model,
                       rng = rng,
-                      num_episodes=5,
-                      num_steps=1,
-                      min_buffer_capacity=50,
-                      number_updates=1,
-                      batch_size=10,
-                      nb_updated_transitions=1
+                      num_episodes=config.num_episodes,
+                      num_steps=None, # it was 1 before
+                      min_buffer_capacity=config.min_buffer_capacity,
+                      number_updates=config.number_updates,
+                      batch_size=config.batch_size,
+                      nb_updated_transitions=config.nb_updated_transitions,
+                      exploratory_policy_steps=config.exp_policy_steps,
                       )
 
 
