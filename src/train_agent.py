@@ -54,6 +54,9 @@ def train( environment,
   # initialiaze agent and LearnerState
   learner_state = agent.initialize()
 
+  # number of updated transitions
+  nb_up_transitions = 0
+
   for episode in iterator:
 
     # Reset any counts and start the environment.
@@ -66,9 +69,6 @@ def train( environment,
 
     # Reset environment
     timestep = environment.reset()
-
-    # number of updated transitions
-    nb_up_transitions = 0
 
     # Run an episode.
     while not timestep.last():
@@ -95,7 +95,6 @@ def train( environment,
       nb_up_transitions += 1
 
       if agent.buffer.__len__() >= min_buffer_capacity and nb_up_transitions >= nb_updated_transitions:
-
           nb_up_transitions = 0
           for nb_updates in range(number_updates):
 
@@ -121,6 +120,7 @@ def train( environment,
       else:
         print("Filling buffer and exploring...")
       print(f'nb of steps:{num_total_steps}')
+
     # store returns
     all_returns.append(episode_return)
 
