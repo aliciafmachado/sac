@@ -41,11 +41,7 @@ def main(argv):
 
     model = SAC(environment_spec, config)
 
-    # model._update_fn(ls, transitions)
     # Call training of SAC agent
-    # Config example of usage on:
-    # https://github.com/google/flax/blob/390383830bd2de784994d4d961e1ffc42a249962/examples/ppo/ppo_lib.py#L277
-
     all_returns, all_logs, num_total_steps, learner_state = train( environment = env,
                       agent = model,
                       rng = rng,

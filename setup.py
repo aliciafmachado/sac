@@ -22,7 +22,7 @@ setuptools.setup(
     package_dir={"sac": "src"},
     # where="src"
     packages=setuptools.find_packages(),
-    python_requires=">=3.8",
+    python_requires=">=3.7",
     # install_requires=[
     #             'gym',
     #             'matplotlib',

@@ -4,6 +4,7 @@ Script for training and saving the agent.
 import jax
 import itertools
 import time
+import numpy as np
 
 # TODO: implement main loop of interaction between agent and environment
 
@@ -16,7 +17,8 @@ def train( environment,
                       buffer_capacity=50,
                       number_updates=5,
                       batch_size=10,
-                      nb_updated_transitions=2
+                      nb_updated_transitions=2,
+                      verbose=True
                       ):
   """Perform the interaction loop.
 
@@ -39,6 +41,7 @@ def train( environment,
     number_updates: number of updates from the same buffer
     batch_size: size of the training batch
     nb_updated_transitions: (after the buffer is filled completely) number of updated transitions to make before updating the model
+    verbose: set true if you want to debug
   """
   # logger = loggers.TerminalLogger(label=label, time_delta=logger_time_delta)
   iterator = range(num_episodes) if num_episodes else itertools.count()
@@ -87,7 +90,7 @@ def train( environment,
           for nb_updates in range(number_updates):
 
               transitions = agent.buffer.sample(batch_size)
-              learner_state, logs = agent._update_fn(learner_state, transitions)
+              learner_state, logs = agent.update_fn(learner_state, transitions)
 
               all_logs.append(logs)
 
@@ -97,8 +100,14 @@ def train( environment,
       episode_return += timestep.reward
 
 
-
     print(f'episode = {episode}/{num_episodes} ... episode return = {episode_return}')
+    # If verbose, print last logs
+    if verbose:
+      mean_loss_q = np.mean([a['loss_q'] for a in all_logs[-number_updates:]])
+      mean_loss_pi = np.mean([a['loss_pi'] for a in all_logs[-number_updates:]])
+      mean_loss_v = np.mean([a['loss_v'] for a in all_logs[-number_updates:]])
+      print(f'loss q:{mean_loss_q}\nloss pi:{mean_loss_pi}\nloss_v:{mean_loss_v}')
+    
     # store returns
     all_returns.append(episode_return)
 

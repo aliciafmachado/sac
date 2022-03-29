@@ -169,9 +169,9 @@ class SAC:
         self._rng, key = jax.random.split(self._rng, 2)
         new_actions = rlax.gaussian_diagonal().sample(key, mu, sigma)
         predicted_new_q_value = self.apply_q(q1_params, transitions.observations, new_actions)
-        action_log_probs = rlax.gaussian_diagonal().logprob(transitions.actions, mu, sigma)
+        # action_log_probs = rlax.gaussian_diagonal().logprob(transitions.actions, mu, sigma)
+        action_log_probs = rlax.gaussian_diagonal().logprob(new_actions, mu, sigma)
 
-        # TODO: add regularization loss
         policy_loss = jnp.mean(action_log_probs - predicted_new_q_value)
 
         return policy_loss
@@ -187,14 +187,16 @@ class SAC:
         # Predict mu and sigma
         mu, sigma = self.apply_policy(policy_params, transitions.observations)
 
-        # Spliy random number generator
+        # Split random number generator
         self._rng, key = jax.random.split(self._rng, 2)
+        new_actions = rlax.gaussian_diagonal().sample(key, mu, sigma)
 
         # Apply policy
         # TODO: check self.gaussian_diagonal()
-        action_log_probs = rlax.gaussian_diagonal().logprob(transitions.actions, mu, sigma)
-        # entropies = rlax.gaussian_diagonal().entropy(mu, sigma)
-        new_actions = rlax.gaussian_diagonal().sample(key, mu, sigma)
+        # action_log_probs = rlax.gaussian_diagonal().logprob(transitions.actions, mu, sigma)
+        action_log_probs = rlax.gaussian_diagonal().logprob(new_actions, mu, sigma)
+        # entropies = rlax.gaussian_diagonal().entropy(mu, sigma) ### use for logging
+        # new_actions = rlax.gaussian_diagonal().sample(key, mu, sigma)
 
         # Calculate predicted q value
         q1_pi = self.apply_q(q1_params, transitions.observations, new_actions)
