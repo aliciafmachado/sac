@@ -14,11 +14,11 @@ def train( environment,
                       rng,
                       num_episodes=None,
                       num_steps=None,
-                      buffer_capacity=50,
+                      min_buffer_capacity=50,
                       number_updates=5,
                       batch_size=10,
                       nb_updated_transitions=2,
-                      verbose=True
+                      verbose=True,
                       ):
   """Perform the interaction loop.
 
@@ -37,7 +37,7 @@ def train( environment,
     runs without limit.
     num_steps: number of episodes to run the loop for. If `None` (default), runs
     without limit.
-    buffer_capacity: minimum number of samples before updating the model
+    min_buffer_capacity: minimum number of samples before updating the model
     number_updates: number of updates from the same buffer
     batch_size: size of the training batch
     nb_updated_transitions: (after the buffer is filled completely) number of updated transitions to make before updating the model
@@ -81,10 +81,10 @@ def train( environment,
       timestep = environment.step(action)
 
       # store transition
-      agent.buffer.store(obs,  action, timestep.reward, timestep.observation, False)
+      agent.buffer.store(obs,  action, timestep.reward, timestep.observation, timestep.last())
       nb_up_transitions += 1
 
-      if agent.buffer.__len__() >= buffer_capacity and nb_up_transitions >= nb_updated_transitions:
+      if agent.buffer.__len__() >= min_buffer_capacity and nb_up_transitions >= nb_updated_transitions:
 
           nb_up_transitions = 0
           for nb_updates in range(number_updates):

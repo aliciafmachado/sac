@@ -47,7 +47,7 @@ def main(argv):
                       rng = rng,
                       num_episodes=5,
                       num_steps=1,
-                      buffer_capacity=50,
+                      min_buffer_capacity=50,
                       number_updates=1,
                       batch_size=10,
                       nb_updated_transitions=1
