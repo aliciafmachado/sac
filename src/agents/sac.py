@@ -140,7 +140,7 @@ class SAC:
         # Calculate target value using target nn
         target_value    = self.apply_value(v_target, transitions.next_observations)
         target_q_value  = jax.lax.stop_gradient(target_value)
-        target_q_value = (1. - transitions.dones[..., None]) * target_value
+        target_q_value = (1. - transitions.dones[..., None]) * target_q_value # TODO
         target_q_value  = transitions.rewards + self.config.gamma * target_value
 
         # Calculate predicted q values using current nn
@@ -222,8 +222,6 @@ class SAC:
         """
         Update function.
         """
-        # TODO: add target network argument to loss functions above
-        # TODO: freeze other neural networks when updating a specific one
         ### Q network update
         loss_q1, grad_q1 = self._grad_q1(curr_ls.params.q1, curr_ls.params.q2, curr_ls.params.v_target, transitions)
         loss_q2, grad_q2 = self._grad_q2(curr_ls.params.q1, curr_ls.params.q2, curr_ls.params.v_target, transitions)
@@ -236,7 +234,6 @@ class SAC:
         curr_ls.params.q2 = optax.apply_updates(curr_ls.params.q2, updates)
 
         ### Policy network update
-        # First calculate mu and sigma:
         loss_pi, grad_pi = self._grad_pi(curr_ls.params.policy, curr_ls.params.q1, transitions)
 
         # Apply gradients
