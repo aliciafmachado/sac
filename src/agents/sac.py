@@ -18,11 +18,6 @@ from src.replay_buffers.buffer import ReplayBuffer
 from src.utils.training_utils import LearnerState, ParamState, OptState, Transitions
 from src.agents.networks import ValueNetwork, SoftQNetwork, PolicyNetwork
 
-# TODO: fix what the functions receive as input and what they return
-# TODO: test functions and check if jit works properly in the class
-# TODO: add done to replay buffer
-# TODO: rescale rewards
-
 
 class SAC:
     """
@@ -46,9 +41,7 @@ class SAC:
         Returns:
             None
         """
-
-        # TODO: fix initialization
-        # TODO: Add target functions, and initialize them
+        # Save environment and config
         self.environment_spec = environment_spec
         self.config = config
 
@@ -134,7 +127,7 @@ class SAC:
     def _loss_fn_q(self, q1_params: types.NestedArray,
                          q2_params: types.NestedArray,
                          v_target: types.NestedArray,
-                         transitions: Transitions):
+                         transitions: Transitions) -> chex.ArrayNumpy:
         """
         Loss function for Q networks.
         """
@@ -162,26 +155,33 @@ class SAC:
 
     def _loss_fn_pi(self, policy_params: types.NestedArray, 
                          q1_params: types.NestedArray,
-                         transitions: Transitions):
+                         q2_params: types.NestedArray,
+                         transitions: Transitions) -> chex.ArrayNumpy:
         """
         Loss function for policy network.
         """
         mu, sigma = self.apply_policy(policy_params, transitions.observations)
         self._rng, key = jax.random.split(self._rng, 2)
         new_actions = self._sample_action(key, mu, sigma)
-        predicted_new_q_value = self.apply_q(q1_params, transitions.observations, new_actions)
-        # action_log_probs = rlax.gaussian_diagonal().logprob(transitions.actions, mu, sigma)
+
+        # We get the predicted new q value
+        q1_pi = self.apply_q(q1_params, transitions.observations, new_actions)
+        q2_pi = self.apply_q(q2_params, transitions.observations, new_actions)
+        predicted_new_q_value = jax.lax.min(q1_pi, q2_pi)
         action_log_probs = self._get_logprob(new_actions, mu, sigma)
 
         policy_loss = jnp.mean(action_log_probs - predicted_new_q_value)
+        
+        # Adding regularization
+        # l2_loss = 0.5 * sum(jnp.sum(jnp.square(p)) for p in jax.tree_leaves(policy_params))
 
-        return policy_loss
+        return policy_loss # + 1e-2 * l2_loss
 
     def _loss_fn_v(self, v_params: types.NestedArray, 
                          policy_params: types.NestedArray,
                          q1_params: types.NestedArray,
                          q2_params: types.NestedArray,
-                         transitions: Transitions):
+                         transitions: Transitions) -> chex.ArrayNumpy:
         """
         Loss function for value network.
         """
@@ -190,14 +190,10 @@ class SAC:
 
         # Split random number generator
         self._rng, key = jax.random.split(self._rng, 2)
-        new_actions = self._sample_action(key, mu, sigma)
 
         # Apply policy
-        # TODO: check self.gaussian_diagonal()
-        # action_log_probs = rlax.gaussian_diagonal().logprob(transitions.actions, mu, sigma)
+        new_actions = self._sample_action(key, mu, sigma)
         action_log_probs = self._get_logprob(new_actions, mu, sigma)
-        # entropies = rlax.gaussian_diagonal().entropy(mu, sigma) ### use for logging
-        # new_actions = rlax.gaussian_diagonal().sample(key, mu, sigma)
 
         # Calculate predicted q value
         q1_pi = self.apply_q(q1_params, transitions.observations, new_actions)
@@ -225,7 +221,7 @@ class SAC:
         """
         ### Q network update
         loss_q1, grad_q1 = self._grad_q1(curr_ls.params.q1, curr_ls.params.q2, curr_ls.params.v_target, transitions)
-        loss_q2, grad_q2 = self._grad_q2(curr_ls.params.q1, curr_ls.params.q2, curr_ls.params.v_target, transitions)
+        _, grad_q2 = self._grad_q2(curr_ls.params.q1, curr_ls.params.q2, curr_ls.params.v_target, transitions)
 
         # Apply gradients TODO check if this way is okay
         updates, curr_ls.opt_state.q1 = self.optimizer_q.update(grad_q1, curr_ls.opt_state.q1)
@@ -235,7 +231,10 @@ class SAC:
         curr_ls.params.q2 = optax.apply_updates(curr_ls.params.q2, updates)
 
         ### Policy network update
-        loss_pi, grad_pi = self._grad_pi(curr_ls.params.policy, curr_ls.params.q1, transitions)
+        loss_pi, grad_pi = self._grad_pi(curr_ls.params.policy, 
+                                    curr_ls.params.q1, 
+                                    curr_ls.params.q2,
+                                    transitions)
 
         # Apply gradients
         updates, curr_ls.opt_state.policy = self.optimizer_q.update(grad_pi, 
@@ -255,7 +254,7 @@ class SAC:
         curr_ls.params.v_target = jax.tree_multimap(lambda x, y: x + self.config.tau * (y - x),
                                     curr_ls.params.v_target, curr_ls.params.v)
         
-        # TODO: add logs
+        # Logging losses
         logs = {
           "loss_q": loss_q1,
           'loss_pi': loss_pi,

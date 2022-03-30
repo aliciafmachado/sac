@@ -34,8 +34,15 @@ environments = {
   2: ReacherEnv,
 }
 
+env_names = {
+  0: 'PendulumEnv',
+  1: 'InvertedPendulumEnv',
+  2: 'ReacherEnv',
+}
+
 
 def main(argv):
+    print(f'Running SAC on {env_names[FLAGS.config.env_idx]}')
     print(f'Model will be saved in {FLAGS.save_pth}/{FLAGS.experiment}')
 
     # Create folder for saving model
@@ -59,26 +66,33 @@ def main(argv):
     config = FLAGS.config
     rng = jax.random.PRNGKey(0)
     environment = environments[config.env_idx]
+
     env = environment(for_evaluation=False)
+    eval_env = environment(for_evaluation=False)
     environment_spec = acme.make_environment_spec(env)
 
     model = SAC(environment_spec, config)
 
     # Call training of SAC agent
-    all_returns, all_logs, num_total_steps, learner_state = train( environment = env,
+    eval_rewards, all_logs, num_total_steps, learner_state = train( environment = env,
+                      eval_environment=eval_env,
                       agent = model,
                       rng = rng,
                       num_episodes=config.num_episodes,
-                      num_steps=None, # it was 1 before
                       min_buffer_capacity=config.min_buffer_capacity,
                       number_updates=config.number_updates,
                       batch_size=config.batch_size,
                       nb_updated_transitions=config.nb_updated_transitions,
                       exploratory_policy_steps=config.exp_policy_steps,
+                      nb_training_steps=config.num_total_steps,
+                      verbose=True,
+                      verbose_frequency=2000,
+                      eval_frequency=config.eval_frequency,
+                      eval_episodes=config.eval_episodes,
                       )
 
     metrics = {
-      'all_returns': all_returns,
+      'eval_rewards': eval_rewards,
       'all_logs': all_logs,
       'num_total_steps': num_total_steps,
     }
