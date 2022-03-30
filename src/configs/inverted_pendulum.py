@@ -49,7 +49,7 @@ def get_config():
     config.nb_updated_transitions = 8
 
     # Total number of steps in the environment
-    config.num_total_steps = int(3e5)
+    config.num_total_steps = int(1e6)
 
     # Seed
     config.seed = 42
@@ -58,10 +58,10 @@ def get_config():
     config.gamma = 0.98
 
     # Replay buffer capacity
-    config.replay_buffer_capacity = int(3e5)
+    config.replay_buffer_capacity = int(3e4)
 
     # Hyperparameter for update of target network
-    config.tau = 0.02
+    config.tau = 0.005
 
     # Number episodes if not using number of steps
     # CAUTION: not tuned
