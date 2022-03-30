@@ -63,10 +63,16 @@ def get_config():
     config.replay_buffer_capacity = int(1e6)
 
     # Hyperparameter for update of target network
-    config.tau = 0.01
+    config.tau = 0.005
 
     # Number of episodes for training if not using nb of steps
     # CAUTION: not tuned
     config.num_episodes = 1000
+
+    # Eval frequency
+    config.eval_frequency = 1000
+
+    # Eval episodes
+    config.eval_episodes = 5
 
     return config
