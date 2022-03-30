@@ -1,6 +1,5 @@
 """
 Default hyperparameters for Reacher env.
-
 The hyperparameters are the same as in rl-baselines3-zoo:
 https://github.com/DLR-RM/rl-baselines3-zoo/blob/master/hyperparams/sac.yml
 """
@@ -14,13 +13,13 @@ def get_config():
     """
     config = ml_collections.ConfigDict()
     # Batch size
-    config.batch_size = 256
+    config.batch_size = 64
     
     # Alpha for rescaling rewards
-    config.scale_reward = 1.
+    config.scale_reward = 5.
 
     # Config lr
-    config.lr = 7.3e-4
+    config.lr = 1e-3
 
     # Learning rate for the policy
     config.p_lr = config.lr
@@ -36,7 +35,7 @@ def get_config():
     config.env_idx = 2
 
     # Minimum on buffer size before training
-    config.min_buffer_capacity = 10000
+    config.min_buffer_capacity = 5000
 
     # Use exploratory policy for the same number of steps
     # as the config min buffer
@@ -49,7 +48,7 @@ def get_config():
     config.nb_updated_transitions = 8
 
     # Total number of steps in the environment
-    config.num_total_steps = int(3e5)
+    config.num_total_steps = int(1e5)
 
     # Seed
     config.seed = 42
@@ -67,9 +66,9 @@ def get_config():
     config.num_episodes = 500000
 
     # Eval frequency
-    config.eval_frequency = 10000
+    config.eval_frequency = 1000
 
     # Eval episodes
-    config.eval_episodes = 5
+    config.eval_episodes = 1
 
     return config
