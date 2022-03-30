@@ -94,7 +94,7 @@ def main(argv):
     }
 
     # Save model and metrics
-    with open(os.path.join(full_path, FLAGS.experiment + "mm"), 'wb') as f:
+    with open(os.path.join(full_path, FLAGS.experiment + "_mm.pickle"), 'wb') as f:
       pickle.dump(mm, f)
 
     print('done')
