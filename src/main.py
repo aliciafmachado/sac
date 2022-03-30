@@ -13,6 +13,9 @@ import tensorflow as tf
 from absl import app
 import jax
 import acme
+import pickle
+import os
+import shutil
 
 
 FLAGS = flags.FLAGS
@@ -21,6 +24,8 @@ config_flags.DEFINE_config_file(
     "src/configs/default.py",
     'File path to the default configuration file.',
     lock_config=True)
+flags.DEFINE_string('save_pth', 'results', 'Path to folder where to save the model')
+flags.DEFINE_string('experiment', 'experiment_0', 'Name of the experiment')
 
 
 environments = {
@@ -31,6 +36,24 @@ environments = {
 
 
 def main(argv):
+    print(f'Model will be saved in {FLAGS.save_pth}/{FLAGS.experiment}')
+
+    # Create folder for saving model
+    full_path = os.path.join(FLAGS.save_pth, FLAGS.experiment)
+    
+    if not os.path.exists(FLAGS.save_pth):
+      os.mkdir(FLAGS.save_pth)
+
+    if os.path.exists(full_path):
+      answer = input("Saving the model will overwrite folder named {}. Continue (y/n)?".format(full_path))
+      if answer.lower() in ["y", "yes"]:
+        shutil.rmtree(full_path)
+      else:
+        print("Change experiment name please and repeat.")
+        return
+    
+    os.mkdir(full_path)
+
     # Make sure tf does not allocate gpu memory.
     tf.config.experimental.set_visible_devices([], 'GPU')
     config = FLAGS.config
@@ -54,6 +77,25 @@ def main(argv):
                       exploratory_policy_steps=config.exp_policy_steps,
                       )
 
+    metrics = {
+      'all_returns': all_returns,
+      'all_logs': all_logs,
+      'num_total_steps': num_total_steps,
+    }
+
+    model = {
+      'config': config,
+      'learner_state': learner_state,
+    }
+
+    mm = {
+      'metrics': metrics,
+      'model': model,
+    }
+
+    # Save model and metrics
+    with open(os.path.join(full_path, FLAGS.experiment + "mm"), 'wb') as f:
+      pickle.dump(mm, f)
 
     print('done')
 
