@@ -4,28 +4,37 @@ Unit test for random agent.
 
 from src.agents.random_agent import RandomAgent
 from src.envs.inverted_pendulum import InvertedPendulumEnv
+from src.envs.reacher import ReacherEnv
 import acme
 import tree
+import pickle
 
 
 def __main__():
-    n_simulations = 5
-    render = True
-    env = InvertedPendulumEnv(for_evaluation=True)
+    n_simulations = 1000
+    render = False
+    env = ReacherEnv(for_evaluation=False)
     random_agent = RandomAgent(acme.make_environment_spec(env))
+    rewards = []
 
     for _ in range(n_simulations):
         ts = env.reset()
+        reward = 0
         while True:
             batched_observation = tree.map_structure(lambda x: x[None], ts.observation)
             a = random_agent.batched_actor_step(batched_observation)[0]
             ts = env.step(a)
             if render:
                 env._env.render()
+            reward += ts.reward
             if ts.last():
                 break
+        rewards.append(reward)
 
     env.close()
+    with open("results/random.pickle", "wb") as f:
+      pickle.dump(rewards, f)
+    print(rewards)
     print("Done.")
 
 if __name__ == "__main__":
