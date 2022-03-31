@@ -244,7 +244,7 @@ class SAC:
                                     transitions)
 
         # Apply gradients
-        updates, curr_ls.opt_state.policy = self.optimizer_q.update(grad_pi, 
+        updates, curr_ls.opt_state.policy = self.optimizer_p.update(grad_pi, 
                                                             curr_ls.opt_state.policy)
         curr_ls.params.policy = optax.apply_updates(curr_ls.params.policy, updates)
 
@@ -253,7 +253,7 @@ class SAC:
                                       curr_ls.params.q1, curr_ls.params.q2, transitions)
 
         # Apply gradients
-        updates, curr_ls.opt_state.v = self.optimizer_q.update(grad_v, 
+        updates, curr_ls.opt_state.v = self.optimizer_v.update(grad_v, 
                                                             curr_ls.opt_state.v)
         curr_ls.params.v = optax.apply_updates(curr_ls.params.v, updates)
 
