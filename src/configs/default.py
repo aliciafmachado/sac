@@ -69,10 +69,4 @@ def get_config():
     # CAUTION: not tuned
     # config.num_episodes = 1000
 
-    # Eval frequency
-    config.eval_frequency = 1000
-
-    # Eval episodes
-    config.eval_episodes = 5
-
     return config
