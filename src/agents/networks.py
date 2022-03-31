@@ -57,8 +57,8 @@ class PolicyNetwork(hk.Module):
       # h = hk.LayerNorm(axis=-1, create_scale=True, create_offset=True)(h)
       h = jax.nn.relu(h)
     mu, pre_sigma = hk.Linear(action_dims)(h), hk.Linear(action_dims)(h)
-    sigma = jnp.exp(jnp.clip(pre_sigma, a_min=-20, a_max=2))
-    return hk.Reshape(action_shape)(mu), hk.Reshape(action_shape)(sigma)
+    # sigma = jnp.exp(jnp.clip(pre_sigma, a_min=-20, a_max=2))
+    return hk.Reshape(action_shape)(mu), hk.Reshape(action_shape)(pre_sigma)
     # Old version of the function is commented below:
     # action_shape = self._action_spec.shape
     # action_dims = np.prod(np.array(action_shape))

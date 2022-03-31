@@ -110,7 +110,8 @@ def train(environment, eval_environment,
         mean_loss_q = np.mean([a['loss_q'] for a in all_logs[-verbose_frequency:]])
         mean_loss_pi = np.mean([a['loss_pi'] for a in all_logs[-verbose_frequency:]])
         mean_loss_v = np.mean([a['loss_v'] for a in all_logs[-verbose_frequency:]])
-        print(f'loss q:{mean_loss_q}\nloss pi:{mean_loss_pi}\nloss_v:{mean_loss_v}')
+        entropy = np.mean([a['entropy'] for a in all_logs[-verbose_frequency:]])
+        print(f'loss q:{mean_loss_q}\nloss pi:{mean_loss_pi}\nloss_v:{mean_loss_v}\nentropy:{entropy}')
       else:
         print("Filling buffer and exploring...")
       print(f'nb of steps:{num_total_steps}')

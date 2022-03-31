@@ -86,7 +86,7 @@ def main(argv):
                       exploratory_policy_steps=config.exp_policy_steps,
                       nb_training_steps=config.num_total_steps,
                       verbose=True,
-                      verbose_frequency=2000,
+                      verbose_frequency=100,
                       eval_frequency=config.eval_frequency,
                       eval_episodes=config.eval_episodes,
                       )
