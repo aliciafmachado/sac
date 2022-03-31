@@ -67,7 +67,7 @@ def get_config():
 
     # Number of episodes for training if not using nb of steps
     # CAUTION: not tuned
-    config.num_episodes = 1000
+    # config.num_episodes = 1000
 
     # Eval frequency
     config.eval_frequency = 1000

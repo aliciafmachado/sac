@@ -35,11 +35,13 @@ class SAC:
     https://arxiv.org/abs/1801.01290
     """
 
-    def __init__(self, environment_spec: specs.EnvironmentSpec, config: ConfigDict) -> None:
+    def __init__(self, rng, environment_spec: specs.EnvironmentSpec, 
+                 config: ConfigDict):
         """
         Initialize the agent.
 
         Args:
+            rng: random number generator
             environment_spec: environment specification
             config: configuration
 
@@ -51,7 +53,7 @@ class SAC:
         self.config = config
 
         # Create RNG
-        self._rng = jax.random.PRNGKey(seed=self.config.seed)
+        self._rng = rng
 
         # Create apply and init for neural networks
         self._init_policy, self._apply_policy = hk.without_apply_rng(hk.transform(self._hk_apply_policy))
@@ -84,14 +86,6 @@ class SAC:
         self.buffer = ReplayBuffer(size_=self.config.replay_buffer_capacity,
                                    featuredim_=self.observation_dim, 
                                    actiondim_=self.action_dim)
-
-        # Call initialization of learner state in the train loop
-        # self._rng, key = jax.random.split(self._rng, 2)
-        # learner_state = self.initialize()
-        # q_t_target = jax.lax.stop_gradient(q_t_target)
-        # ...
-        # update_fn(learner_state, learner_state_target, transitions)
-        # ...
         
     def initialize(self):
       self._rng, key = jax.random.split(self._rng, 2)

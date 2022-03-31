@@ -6,13 +6,10 @@ import itertools
 import time
 import numpy as np
 
-# TODO: implement main loop of interaction between agent and environment
 
-# TODO: Discuss buffer update
 def train(environment, eval_environment, 
                       agent,
                       rng,
-                      num_episodes=None,
                       min_buffer_capacity=50,
                       number_updates=5,
                       batch_size=10,
@@ -38,8 +35,6 @@ def train(environment, eval_environment,
     eval_environment: dm_env used for evaluation of the agent
     agent: object selecting actions, updating parameters and storing losses.
     rng: random generation seed
-    num_episodes: number of episodes to run the loop for. If `None` (default),
-    runs without limit.
     num_steps: number of episodes to run the loop for. If `None` (default), runs
     without limit.
     min_buffer_capacity: minimum number of samples before updating the model
@@ -53,14 +48,12 @@ def train(environment, eval_environment,
     verbose: set true if you want to debug
     verbose_frequency: frequency of verbose print
   """
-  # logger = loggers.TerminalLogger(label=label, time_delta=logger_time_delta)
-  # iterator = range(num_episodes) if num_episodes else itertools.count()
-
-  # TODO: join together these metrics
+  # Metrics logging
   all_logs = []
   eval_rewards = []
 
   num_total_steps = 0
+
   # initialiaze agent and LearnerState
   learner_state = agent.initialize()
 

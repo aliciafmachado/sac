@@ -26,6 +26,7 @@ config_flags.DEFINE_config_file(
     lock_config=True)
 flags.DEFINE_string('save_pth', 'results', 'Path to folder where to save the model')
 flags.DEFINE_string('experiment', 'experiment_0', 'Name of the experiment')
+flags.DEFINE_integer('seed', 42, 'Seed for experiment')
 
 
 environments = {
@@ -64,21 +65,25 @@ def main(argv):
     # Make sure tf does not allocate gpu memory.
     tf.config.experimental.set_visible_devices([], 'GPU')
     config = FLAGS.config
-    rng = jax.random.PRNGKey(0)
+    rng = jax.random.PRNGKey(FLAGS.seed)
     environment = environments[config.env_idx]
 
     env = environment(for_evaluation=False)
+    env._env.seed(FLAGS.seed)
+
     eval_env = environment(for_evaluation=False)
+    eval_env._env.seed(FLAGS.seed + 1)
+
     environment_spec = acme.make_environment_spec(env)
 
-    model = SAC(environment_spec, config)
+    rng, key = jax.random.split(rng, 2)
+    model = SAC(key, environment_spec, config)
 
     # Call training of SAC agent
     eval_rewards, all_logs, num_total_steps, learner_state = train( environment = env,
                       eval_environment=eval_env,
                       agent = model,
                       rng = rng,
-                      num_episodes=config.num_episodes,
                       min_buffer_capacity=config.min_buffer_capacity,
                       number_updates=config.number_updates,
                       batch_size=config.batch_size,

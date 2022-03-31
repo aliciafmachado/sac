@@ -1,7 +1,8 @@
 """
 Default hyperparameters for Reacher env.
-The hyperparameters are the same as in rl-baselines3-zoo:
+The hyperparameters were based on rl-baselines3-zoo:
 https://github.com/DLR-RM/rl-baselines3-zoo/blob/master/hyperparams/sac.yml
+and on the original SAC paper to get better and more stable results.
 """
 
 import ml_collections
@@ -19,7 +20,7 @@ def get_config():
     config.scale_reward = 5.
 
     # Config lr
-    config.lr = 1e-3
+    config.lr = 7.3e-4
 
     # Learning rate for the policy
     config.p_lr = config.lr
@@ -50,9 +51,6 @@ def get_config():
     # Total number of steps in the environment
     config.num_total_steps = int(1e5)
 
-    # Seed
-    config.seed = 42
-
     # Gamma
     config.gamma = 0.98
 
@@ -60,13 +58,13 @@ def get_config():
     config.replay_buffer_capacity = int(3e5)
 
     # Hyperparameter for update of target network
-    config.tau = 0.02
+    config.tau = 0.01
 
     # CAUTION: not tuned
-    config.num_episodes = 500000
+    # config.num_episodes = 500000
 
     # Eval frequency
-    config.eval_frequency = 1000
+    config.eval_frequency = 100
 
     # Eval episodes
     config.eval_episodes = 1

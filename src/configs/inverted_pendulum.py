@@ -36,7 +36,7 @@ def get_config():
     config.env_idx = 1
 
     # Minimum on buffer size before training
-    config.min_buffer_capacity = 10000
+    config.min_buffer_capacity = 5000
 
     # Use exploratory policy for the same number of steps
     # as the config min buffer
@@ -49,10 +49,7 @@ def get_config():
     config.nb_updated_transitions = 8
 
     # Total number of steps in the environment
-    config.num_total_steps = int(1e6)
-
-    # Seed
-    config.seed = 42
+    config.num_total_steps = int(1e5)
 
     # Gamma
     config.gamma = 0.98
@@ -65,10 +62,10 @@ def get_config():
 
     # Number episodes if not using number of steps
     # CAUTION: not tuned
-    config.num_episodes = 500000
+    # config.num_episodes = 500000
 
     # Eval frequency
-    config.eval_frequency = 10000
+    config.eval_frequency = 100
 
     # Eval episodes
     config.eval_episodes = 5
