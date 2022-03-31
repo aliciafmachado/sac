@@ -180,7 +180,7 @@ class SAC:
         # Adding regularization
         l2_loss = 0.5 * sum(jnp.sum(jnp.square(p)) for p in jax.tree_leaves(policy_params))
 
-        return policy_loss + l2_loss, entropy
+        return policy_loss, entropy
 
     def _loss_fn_v(self, v_params: types.NestedArray, 
                          policy_params: types.NestedArray,
@@ -287,6 +287,8 @@ class SAC:
       obs = jnp.reshape(observations, (1, -1))
       mu, sigma = self.apply_policy(policy_params, obs)
       if deterministic:
+        act_limit = self.environment_spec.actions.maximum
+        mu = jnp.tanh(mu) * act_limit
         return jnp.ravel(mu)
       a, _ = self._sample_action(key, mu, sigma)
       return jnp.ravel(a)
