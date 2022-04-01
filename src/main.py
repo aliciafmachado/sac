@@ -26,6 +26,7 @@ config_flags.DEFINE_config_file(
 flags.DEFINE_string('save_pth', 'results', 'Path to folder where to save the model')
 flags.DEFINE_string('experiment', 'experiment_0', 'Name of the experiment')
 flags.DEFINE_integer('seed', 42, 'Seed for experiment')
+flags.DEFINE_boolean('verbose', False, 'Verbose for showing losses, grads and entropy.')
 
 
 def main(argv):
@@ -76,7 +77,7 @@ def main(argv):
                       nb_updated_transitions=config.nb_updated_transitions,
                       exploratory_policy_steps=config.exp_policy_steps,
                       nb_training_steps=config.num_total_steps,
-                      verbose=True,
+                      verbose=FLAGS.verbose,
                       verbose_frequency=100,
                       eval_frequency=config.eval_frequency,
                       eval_episodes=config.eval_episodes,
