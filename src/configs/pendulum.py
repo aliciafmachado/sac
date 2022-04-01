@@ -64,4 +64,10 @@ def get_config():
     # Hyperparameter for update of target network
     config.tau = 0.005
 
+    # Eval frequency
+    config.eval_frequency = 100
+
+    # Eval episodes
+    config.eval_episodes = 1
+
     return config
