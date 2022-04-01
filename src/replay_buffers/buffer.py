@@ -25,8 +25,6 @@ class ReplayBuffer:
 
         self.__size = size_
         self.__counter = 0
-        self.__feature_dim = featuredim_
-        self.__action_dim = actiondim_
         self.__states = jnp.zeros((size_, featuredim_))
         self.__next_states = jnp.zeros((size_, featuredim_))
         self.__actions = jnp.zeros((size_, actiondim_))

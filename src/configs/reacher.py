@@ -1,5 +1,6 @@
 """
 Default hyperparameters for Reacher env.
+
 The hyperparameters were based on rl-baselines3-zoo:
 https://github.com/DLR-RM/rl-baselines3-zoo/blob/master/hyperparams/sac.yml
 and on the original SAC paper to get better and more stable results.

@@ -6,9 +6,7 @@ from absl import flags
 from ml_collections import config_flags
 from src.train_agent import train
 from src.agents.sac import SAC
-from src.envs.inverted_pendulum import InvertedPendulumEnv
-from src.envs.pendulum import PendulumEnv
-from src.envs.reacher import ReacherEnv
+from src.utils.training_utils import environments, env_names
 import tensorflow as tf
 from absl import app
 import jax
@@ -19,6 +17,7 @@ import shutil
 
 
 FLAGS = flags.FLAGS
+
 config_flags.DEFINE_config_file(
     'config',
     "src/configs/default.py",
@@ -27,19 +26,6 @@ config_flags.DEFINE_config_file(
 flags.DEFINE_string('save_pth', 'results', 'Path to folder where to save the model')
 flags.DEFINE_string('experiment', 'experiment_0', 'Name of the experiment')
 flags.DEFINE_integer('seed', 42, 'Seed for experiment')
-
-
-environments = {
-  0: PendulumEnv,
-  1: InvertedPendulumEnv,
-  2: ReacherEnv,
-}
-
-env_names = {
-  0: 'PendulumEnv',
-  1: 'InvertedPendulumEnv',
-  2: 'ReacherEnv',
-}
 
 
 def main(argv):
@@ -69,10 +55,10 @@ def main(argv):
     environment = environments[config.env_idx]
 
     env = environment(for_evaluation=False)
-    env._env.seed(FLAGS.seed)
+    env._env.seed(seed=FLAGS.seed)
 
     eval_env = environment(for_evaluation=False)
-    eval_env._env.seed(FLAGS.seed + 1)
+    eval_env._env.seed(seed=FLAGS.seed + 1)
 
     environment_spec = acme.make_environment_spec(env)
 
