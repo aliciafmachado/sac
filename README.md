@@ -4,9 +4,9 @@ Soft Actor-Critic implementation in JAX, based on **Soft Actor-Critic: Off-Polic
 
 We use the original algorithm with value, Q and policy networks.
 
-## Installation instructions:
+## User instructions:
 
-First, create your environment with the requirements on requirements.txt.
+First, install the requirements and the code following the instructions in `docs/installation.md`.
 
 Then, you can run an agent using the script `eval.py`, and train an agent with `main.py`.
 
