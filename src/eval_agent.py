@@ -32,7 +32,8 @@ def evaluate(environment,
             else:
                 # Evaluate deterministically with the agent's policy
                 key = None
-                action = agent.get_action(key, learner_state.params.policy, obs)
+                action = agent.get_action(key, learner_state.params.policy, 
+                                          obs, deterministic=True)                  
 
             timestep = environment.step(action)
             eval_episode += timestep.reward
