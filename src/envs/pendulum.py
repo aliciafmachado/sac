@@ -12,7 +12,7 @@ import numpy as np
 # Pendulum environment
 class PendulumEnv(dm_env.Environment):
   def __init__(self, for_evaluation: bool) -> None:
-    self._env = gym.make('Pendulum-v0')
+    self._env = gym.make('Pendulum-v1')
     self._for_evaluation = for_evaluation
     if self._for_evaluation:
       self.screens = []

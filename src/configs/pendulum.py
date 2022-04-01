@@ -14,6 +14,7 @@ def get_config():
     """
     Get the default configuration.
     """
+    # ATTENTION: These configurations weren't properly tuned!
     config = ml_collections.ConfigDict()
     # Batch size
     config.batch_size = 256

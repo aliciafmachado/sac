@@ -20,7 +20,7 @@ FLAGS = flags.FLAGS
 
 config_flags.DEFINE_config_file(
     'config',
-    "src/configs/default.py",
+    "src/configs/pendulum.py",
     'File path to the default configuration file.',
     lock_config=True)
 flags.DEFINE_string('save_pth', 'results', 'Path to folder where to save the model')
