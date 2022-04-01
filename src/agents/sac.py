@@ -2,7 +2,6 @@
 SAC agent.
 """
 
-from src.agents.base_agent import Agent
 from acme import specs, types
 import chex
 from typing import *

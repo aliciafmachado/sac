@@ -65,6 +65,6 @@ def get_config():
     config.eval_frequency = 100
 
     # Eval episodes
-    config.eval_episodes = 5
+    config.eval_episodes = 1
 
     return config

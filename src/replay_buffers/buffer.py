@@ -83,5 +83,6 @@ class ReplayBuffer:
             print('Buffer full')
 
     def __len__(self):
-        return np.min(self.__counter, self.__size)
+        "Returns how many transitions are stored in the buffer."
+        return min(self.__counter, self.__size)
 
