@@ -22,16 +22,7 @@ setuptools.setup(
     package_dir={"sac": "src"},
     # where="src"
     packages=setuptools.find_packages(),
-    python_requires=">=3.7",
-    # install_requires=[
-    #             'gym',
-    #             'matplotlib',
-    #             'numpy',
-    #             'jax',
-    #             'dm-acme',
-    #             'chex',
-    #             'dm_env',
-    #         ],
+    python_requires=">=3.7.13",
 )
 
 print(setuptools.find_packages())
