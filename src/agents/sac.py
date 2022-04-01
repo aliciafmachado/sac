@@ -130,11 +130,11 @@ class SAC:
         Loss function for Q networks.
         """
         # Calculate target value using target nn
-        target_value    = self.apply_value(v_target, transitions.next_observations)
-        target_q_value  = jax.lax.stop_gradient(target_value)
-        target_q_value = (1. - transitions.dones[..., None]) * target_q_value # TODO
-        target_q_value  = transitions.rewards * self.config.scale_reward + self.config.gamma * target_value
-
+        target_q_value    = self.apply_value(v_target, transitions.next_observations)
+        target_q_value = (1. - transitions.dones[..., None]) * target_q_value 
+        target_q_value  = transitions.rewards * self.config.scale_reward + self.config.gamma * target_q_value
+        target_q_value = jax.lax.stop_gradient(target_q_value)
+        
         # Calculate predicted q values using current nn
         predicted_q1_value = self.apply_q(q1_params, transitions.observations,
                                                            transitions.actions)
@@ -174,7 +174,7 @@ class SAC:
         # Adding regularization
         l2_loss = 0.5 * sum(jnp.sum(jnp.square(p)) for p in jax.tree_leaves(policy_params))
 
-        return policy_loss, entropy
+        return policy_loss + l2_loss, entropy
 
     def _loss_fn_v(self, v_params: types.NestedArray, 
                          policy_params: types.NestedArray,
