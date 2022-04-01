@@ -3,6 +3,7 @@ Function for evaluating the agent.
 """
 import numpy as np
 import jax
+import tree
 
 
 def evaluate(environment,
@@ -25,8 +26,9 @@ def evaluate(environment,
             obs = timestep.observation
             if agent_type == 'random':
                 rng, key = jax.random.split(rng, 2)
-                action = agent.get_action(key, obs)
-
+                batched_observation = tree.map_structure(lambda x: x[None], obs)
+                action = agent.get_action(key, batched_observation)[0]
+      
             else:
                 # Evaluate deterministically with the agent's policy
                 key = None
