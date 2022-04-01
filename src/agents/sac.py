@@ -257,9 +257,9 @@ class SAC:
         
         # Logging losses and gradients
         logs = {
-          "loss_q": loss_q1,
+          'loss_q': loss_q1,
           'loss_pi': loss_pi,
-          "loss_v": loss_v,
+          'loss_v': loss_v,
           'entropy': entropy,
           'grad_q1': sum(jnp.sum(jnp.square(p)) for p in jax.tree_leaves(grad_q1)),
           'grad_q2': sum(jnp.sum(jnp.square(p)) for p in jax.tree_leaves(grad_q2)),
