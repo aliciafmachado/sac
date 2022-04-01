@@ -1,5 +1,4 @@
 absl-py==1.0.0
-acme==1.24.0
 certifi==2021.10.8
 cffi==1.15.0
 charset-normalizer==2.0.12
@@ -39,3 +38,12 @@ toolz==0.11.2
 typing_extensions==4.1.1
 urllib3==1.26.8
 zipp==3.7.0
+tensorflow==2.8.0
+optax==0.1.1
+rlax==0.1.2
+setuptools==58.0.4
+mujoco_py==1.50.0.1
+launchpad==1.1.0
+dm-haiku==0.0.6
+ml-collections==0.1.1
+pygame==2.1.2
