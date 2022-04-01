@@ -3,6 +3,7 @@ Script for training and saving the agent.
 """
 import jax
 import numpy as np
+from collections import defaultdict
 
 
 def train(environment, eval_environment, 
@@ -47,7 +48,7 @@ def train(environment, eval_environment,
     verbose_frequency: frequency of verbose print
   """
   # Metrics logging
-  all_logs = []
+  all_logs = defaultdict(list)
   eval_rewards = []
 
   num_total_steps = 0
@@ -90,7 +91,9 @@ def train(environment, eval_environment,
             transitions = agent.buffer.sample(batch_size)
             learner_state, logs = agent.update_fn(learner_state, transitions)
 
-            all_logs.append(logs)
+            for log in logs.keys():
+              all_logs[log].append(logs[log])
+            # all_logs.append(logs)
 
     if timestep.last():
         timestep = environment.reset()
@@ -98,14 +101,13 @@ def train(environment, eval_environment,
     # Log if debugging
     if verbose and num_total_steps % verbose_frequency == 0:
       if agent.buffer.__len__() >= min_buffer_capacity:
-        mean_loss_q = np.mean([a['loss_q'] for a in all_logs[-verbose_frequency:]])
-        mean_loss_pi = np.mean([a['loss_pi'] for a in all_logs[-verbose_frequency:]])
-        mean_loss_v = np.mean([a['loss_v'] for a in all_logs[-verbose_frequency:]])
-        entropy = np.mean([a['entropy'] for a in all_logs[-verbose_frequency:]])
-        print(f'loss q:{mean_loss_q}\nloss pi:{mean_loss_pi}\nloss_v:{mean_loss_v}\nentropy:{entropy}')
+        for metric in all_logs.keys():
+          mean_metric = np.mean(all_logs[metric][-verbose_frequency:])
+          print(f'Mean value in last {verbose_frequency} steps for {metric}: {mean_metric}')
+        
       else:
-        print("Filling buffer and exploring...")
-      print(f'nb of steps:{num_total_steps}')
+        print("Filling buffer...")
+      print(f'nb of steps:{num_total_steps}\n')
 
     # Do evaluation
     if num_total_steps % eval_frequency == 0:
