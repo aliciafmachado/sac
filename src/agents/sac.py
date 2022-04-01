@@ -130,9 +130,9 @@ class SAC:
         Loss function for Q networks.
         """
         # Calculate target value using target nn
-        target_q_value    = self.apply_value(v_target, transitions.next_observations)
+        target_q_value = self.apply_value(v_target, transitions.next_observations)
         target_q_value = (1. - transitions.dones[..., None]) * target_q_value 
-        target_q_value  = transitions.rewards * self.config.scale_reward + self.config.gamma * target_q_value
+        target_q_value = transitions.rewards * self.config.scale_reward + self.config.gamma * target_q_value
         target_q_value = jax.lax.stop_gradient(target_q_value)
         
         # Calculate predicted q values using current nn
@@ -203,7 +203,7 @@ class SAC:
         target_value_func = q_pi - action_log_probs
         target_value_func = jax.lax.stop_gradient(target_value_func)
 
-        predicted_value = self.apply_value(v_params, transitions.next_observations)
+        predicted_value = self.apply_value(v_params, transitions.observations)
 
         error = predicted_value - target_value_func
 
@@ -261,6 +261,10 @@ class SAC:
           'loss_pi': loss_pi,
           "loss_v": loss_v,
           'entropy': entropy,
+          'gradq1': sum(jnp.sum(jnp.square(p)) for p in jax.tree_leaves(grad_q1)),
+          'gradq2': sum(jnp.sum(jnp.square(p)) for p in jax.tree_leaves(grad_q2)),
+          'gradpi': sum(jnp.sum(jnp.square(p)) for p in jax.tree_leaves(grad_pi)),
+          'gradv': sum(jnp.sum(jnp.square(p)) for p in jax.tree_leaves(grad_v)),
         }
 
         return curr_ls, logs
