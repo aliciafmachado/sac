@@ -2,32 +2,33 @@
 Random agent for baseline and testing.
 """
 
-from src.agents.base_agent import Agent, Transitions
 from acme import specs, types
 import chex
 from typing import *
 import jax
 from jax import numpy as jnp
+from src.utils.training_utils import LearnerState, Transitions
 
 
-class RandomAgent(Agent):
-  def __init__(self, environment_spec: specs.EnvironmentSpec) -> None:
-    # TODO: add random key as arg so that we can use jnp instead of np
+class RandomAgent :
+  def __init__(self, environment_spec: specs.EnvironmentSpec):
+    """
+    Initializes random agent.
+    """
     self.action_spec = environment_spec.actions
-    self.seed = 0
-    self.key = jax.random.PRNGKey(self.seed)
+    self.get_action = jax.jit(self._get_action)
 
-  def batched_actor_step(self, observation: types.NestedArray) -> types.NestedArray:
+  def _get_action(self, rng: chex.ArrayNumpy, observation: types.NestedArray) -> types.NestedArray:
     """
     Returns random actions in response to batch of observations.
     """
-    # TODO: maybe use vmap instead of batch size
-    self.key, subkey = jax.random.split(self.key)
+    self.rng, subkey = jax.random.split(self.key)
     batch_size = jnp.shape(observation)[0]
     return jax.random.uniform(subkey, (batch_size, *self.action_spec.shape))
 
-  def learner_step(self, transitions: Transitions) -> Mapping[str, chex.ArrayNumpy]:
+  def _update_fn(self, curr_ls: LearnerState,
+                         transitions: Transitions) -> Tuple[LearnerState, Dict[str, float]]:
     """
     Returns empty dictionary since this agent doesn't learn.
     """
-    return dict()
+    return curr_ls, {}

@@ -1,8 +1,9 @@
 """
 Default hyperparameters for Inverted pendulum env.
 
-The hyperparameters are the same as in rl-baselines3-zoo:
+The hyperparameters were based on rl-baselines3-zoo:
 https://github.com/DLR-RM/rl-baselines3-zoo/blob/master/hyperparams/sac.yml
+and on the original SAC paper to get better and more stable results.
 """
 
 import ml_collections
@@ -59,10 +60,6 @@ def get_config():
 
     # Hyperparameter for update of target network
     config.tau = 0.005
-
-    # Number episodes if not using number of steps
-    # CAUTION: not tuned
-    # config.num_episodes = 500000
 
     # Eval frequency
     config.eval_frequency = 100

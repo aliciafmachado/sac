@@ -2,8 +2,9 @@
 Default hyperparameters for SAC agent.
 Runs on Pendulum-v0 environment.
 
-Some of the hyperparameters used here were taken from:
+The hyperparameters were based on rl-baselines3-zoo:
 https://github.com/DLR-RM/rl-baselines3-zoo/blob/master/hyperparams/sac.yml
+and on the original SAC paper to get better and more stable results.
 """
 
 import ml_collections
@@ -51,10 +52,7 @@ def get_config():
     config.nb_updated_transitions = 1
 
     # Total number of steps in the environment
-    config.num_total_steps = 20000
-
-    # Seed
-    config.seed = 42
+    config.num_total_steps = 1e5
 
     # Gamma
     config.gamma = 0.99
@@ -64,9 +62,5 @@ def get_config():
 
     # Hyperparameter for update of target network
     config.tau = 0.005
-
-    # Number of episodes for training if not using nb of steps
-    # CAUTION: not tuned
-    # config.num_episodes = 1000
 
     return config

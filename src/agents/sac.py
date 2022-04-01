@@ -2,7 +2,6 @@
 SAC agent.
 """
 
-from os import environ
 from src.agents.base_agent import Agent
 from acme import specs, types
 import chex
@@ -17,12 +16,12 @@ from typing import *
 from src.replay_buffers.buffer import ReplayBuffer
 from src.utils.training_utils import LearnerState, ParamState, OptState, Transitions
 from src.agents.networks import ValueNetwork, SoftQNetwork, PolicyNetwork
-from jax.experimental import optimizers as op
 import jax.nn as nn
 
-
+# Clipping the log sigma values
 SIGMA_MIN = -20
 SIGMA_MAX = 2
+
 
 class SAC:
     """
@@ -44,9 +43,6 @@ class SAC:
             rng: random number generator
             environment_spec: environment specification
             config: configuration
-
-        Returns:
-            None
         """
         # Save environment and config
         self.environment_spec = environment_spec
@@ -88,11 +84,14 @@ class SAC:
                                    actiondim_=self.action_dim)
         
     def initialize(self):
-      self._rng, key = jax.random.split(self._rng, 2)
-      # Create dummy inputs to initialize neural networks
-      dummy_obs = jnp.expand_dims(jnp.zeros(self.environment_spec.observations.shape), axis=0)
-      dummy_actions = jnp.expand_dims(jnp.zeros(self.environment_spec.actions.shape), axis=0)
-      return self.init_fn(key, dummy_obs, dummy_actions)
+        """
+        Initialize the agent, including neural networks.
+        """
+        self._rng, key = jax.random.split(self._rng, 2)
+        # Create dummy inputs to initialize neural networks
+        dummy_obs = jnp.expand_dims(jnp.zeros(self.environment_spec.observations.shape), axis=0)
+        dummy_actions = jnp.expand_dims(jnp.zeros(self.environment_spec.actions.shape), axis=0)
+        return self.init_fn(key, dummy_obs, dummy_actions)
 
     def _init_fn(self, rng: chex.PRNGKey, dummy_obs: types.NestedArray, 
                  dummy_actions: types.NestedArray) -> LearnerState:
@@ -148,7 +147,10 @@ class SAC:
         # Loss for q1 and q2
         q1_loss = 0.5 * jnp.mean(jnp.square(td_error_q1))
         q2_loss = 0.5 * jnp.mean(jnp.square(td_error_q2))
-
+        
+        # We return the sum of the two q loss
+        # But we could have implemented the loss separely, but
+        # it shouldn't change much
         return q1_loss + q2_loss
 
     def _loss_fn_pi(self, policy_params: types.NestedArray, 
@@ -166,8 +168,8 @@ class SAC:
         q1_pi = self.apply_q(q1_params, transitions.observations, new_actions)
         q2_pi = self.apply_q(q2_params, transitions.observations, new_actions)
         predicted_new_q_value = jax.lax.min(q1_pi, q2_pi)
-        # action_log_probs = self._get_logprob(new_actions, mu, sigma)
-
+        
+        # Calculate policy loss
         policy_loss = jnp.mean(action_log_probs - predicted_new_q_value)
         entropy = rlax.squashed_gaussian().entropy(mu, sigma)
 
@@ -192,7 +194,6 @@ class SAC:
 
         # Apply policy
         new_actions, action_log_probs = self._sample_action(key, mu, sigma)
-        # action_log_probs = self._get_logprob(new_actions, mu, sigma)
 
         # Calculate predicted q value
         q1_pi = self.apply_q(q1_params, transitions.observations, new_actions)
@@ -224,7 +225,7 @@ class SAC:
 
         # Apply gradients
         # You can try with the version using clipped grads by
-        # passing the grad values by op.clip_grads
+        # passing the grad values by jax.example_libraries.optimizers.clip_grads
         updates, curr_ls.opt_state.q1 = self.optimizer_q.update(grad_q1, curr_ls.opt_state.q1)
         curr_ls.params.q1 = optax.apply_updates(curr_ls.params.q1, updates)
 
@@ -255,16 +256,16 @@ class SAC:
         curr_ls.params.v_target = jax.tree_multimap(lambda x, y: x + self.config.tau * (y - x),
                                     curr_ls.params.v_target, curr_ls.params.v)
         
-        # Logging losses
+        # Logging losses and gradients
         logs = {
           "loss_q": loss_q1,
           'loss_pi': loss_pi,
           "loss_v": loss_v,
           'entropy': entropy,
-          'gradq1': sum(jnp.sum(jnp.square(p)) for p in jax.tree_leaves(grad_q1)),
-          'gradq2': sum(jnp.sum(jnp.square(p)) for p in jax.tree_leaves(grad_q2)),
-          'gradpi': sum(jnp.sum(jnp.square(p)) for p in jax.tree_leaves(grad_pi)),
-          'gradv': sum(jnp.sum(jnp.square(p)) for p in jax.tree_leaves(grad_v)),
+          'grad_q1': sum(jnp.sum(jnp.square(p)) for p in jax.tree_leaves(grad_q1)),
+          'grad_q2': sum(jnp.sum(jnp.square(p)) for p in jax.tree_leaves(grad_q2)),
+          'grad_pi': sum(jnp.sum(jnp.square(p)) for p in jax.tree_leaves(grad_pi)),
+          'grad_v': sum(jnp.sum(jnp.square(p)) for p in jax.tree_leaves(grad_v)),
         }
 
         return curr_ls, logs
@@ -282,38 +283,57 @@ class SAC:
                           policy_params: types.NestedArray, 
                           observations: types.NestedArray,
                           deterministic=False) -> types.NestedArray:
-      obs = jnp.reshape(observations, (1, -1))
-      mu, sigma = self.apply_policy(policy_params, obs)
-      if deterministic:
-        act_limit = self.environment_spec.actions.maximum
-        mu = jnp.tanh(mu) * act_limit
-        return jnp.ravel(mu)
-      a, _ = self._sample_action(key, mu, sigma)
-      return jnp.ravel(a)
+        """
+        Get action from policy network.
+
+        Can return the actions deterministically or stochastically.
+        """
+        obs = jnp.reshape(observations, (1, -1))
+        mu, sigma = self.apply_policy(policy_params, obs)
+        
+        # Return mu
+        if deterministic:
+            return jnp.ravel(self._transform_action_to_env_spec(mu))
+
+        # Sample from the distribution
+        a, _ = self._sample_action(key, mu, sigma)
+        return jnp.ravel(a)
 
     def _sample_action(self, key: chex.ArrayNumpy,
                              mu: types.NestedArray, 
                              sigma: types.NestedArray) -> Tuple[types.NestedArray, types.NestedArray]:
-      sigma = jnp.exp(jnp.clip(sigma, a_min=SIGMA_MIN, a_max=SIGMA_MAX))
-      actions = rlax.gaussian_diagonal().sample(key, mu, sigma)
-      logprob = rlax.gaussian_diagonal().logprob(actions, mu, sigma)
-      logprob -= (2*(jnp.log(2) - actions - nn.softplus(-2 * actions))).sum(axis=1)
-      actions = jnp.tanh(actions)
-      act_limit = self.environment_spec.actions.maximum
-      actions = act_limit * actions
-      return actions, logprob
-      # return rlax.squashed_gaussian(sigma_min=SIGMA_MIN, 
-      #                               sigma_max=SIGMA_MAX).sample(key, mu, sigma, self.environment_spec.actions),
-      # rlax.squashed_gaussian(sigma_min=SIGMA_MIN, 
-      #                               sigma_max=SIGMA_MAX).logprob(
-      #                                 actions, mu, sigma, 
-      #                                 self.environment_spec.actions)
-    # def _get_logprob(self, actions: types.NestedArray, mu: types.NestedArray, 
-    #                  sigma: types.NestedArray) -> types.NestedArray:
-    #   logprob = rlax.gaussian_diagonal().logprob(actions, mu, sigma)
-    #   logprob -= jnp.log(jnp.relu(1.0 - jnp.square(actions)) + 1e-6)
-    #   return logprob
-      # return rlax.squashed_gaussian(sigma_min=SIGMA_MIN, 
-      #                               sigma_max=SIGMA_MAX).logprob(
-      #                                 actions, mu, sigma, 
-      #                                 self.environment_spec.actions)
+        """
+        Sample an action from a Squashed Gaussian distribution.
+        """
+        # Get actual sigma
+        sigma = jnp.exp(jnp.clip(sigma, a_min=SIGMA_MIN, a_max=SIGMA_MAX))
+
+        # Sample from a gaussian
+        actions = rlax.gaussian_diagonal().sample(key, mu, sigma)
+
+        # Get logprob for a gaussian
+        logprob = rlax.gaussian_diagonal().logprob(actions, mu, sigma)
+
+        # Correction when squashing
+        # We use the simplification of logprob in:
+        # https://github.com/openai/spinningup/blob/038665d62d569055401d91856abb287263096178/spinup/algos/pytorch/sac/core.py#L53
+        logprob -= (2 * (jnp.log(2) - actions - nn.softplus(-2 * actions))).sum(axis=1)
+        
+        # Get action in final shape
+        actions = self._transform_action_to_env_spec(actions)
+
+        return actions, logprob
+
+    def _transform_action_to_env_spec(self, actions: types.NestedArray) -> types.NestedArray:
+        """
+        Transform actions from predicted to the environment_spec.actions.
+        """
+        act_max = self.environment_spec.actions.maximum
+        act_min = self.environment_spec.actions.minimum
+
+        # Apply tanh to get action between [-1, 1]
+        actions = jnp.tanh(actions)
+
+        # Now change action so that it's inside [env_spec.actions.minimum, env_spec.actions.maximum]
+        actions = (act_max - act_min) * (actions + 1) / 2 + act_min
+        return actions

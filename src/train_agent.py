@@ -2,8 +2,6 @@
 Script for training and saving the agent.
 """
 import jax
-import itertools
-import time
 import numpy as np
 
 

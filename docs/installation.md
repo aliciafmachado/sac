@@ -16,4 +16,4 @@ $ pip install -r requirements.txt
 $ pip install -e .
 ```
 
-Then, you can start developing.
+Then, you can start training and running the sac agent.
