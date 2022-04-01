@@ -14,6 +14,8 @@ import tensorflow as tf
 from absl import app
 import acme
 from jax import numpy as jnp
+import jax
+
 
 FLAGS = flags.FLAGS
 
@@ -34,11 +36,13 @@ environments = {
 def main(argv):
     # Make sure tf does not allocate gpu memory.
     tf.config.experimental.set_visible_devices([], 'GPU')
+    rng = jax.random.PRNGKey(0)
+    rng, key = jax.random.split(rng, 2)
     config = FLAGS.config
     environment = environments[config.env_idx]
     env = environment(for_evaluation=False)
     environment_spec = acme.make_environment_spec(env)
-    model = SAC(environment_spec, config)
+    model = SAC(key, environment_spec, config)
     ls = model.initialize()
 
     obs_shp = (1, *environment_spec.observations.shape)

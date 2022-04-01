@@ -18,13 +18,13 @@ class RandomAgent :
     self.action_spec = environment_spec.actions
     self.get_action = jax.jit(self._get_action)
 
-  def _get_action(self, rng: chex.ArrayNumpy, observation: types.NestedArray) -> types.NestedArray:
+  def _get_action(self, key: chex.ArrayNumpy, observation: types.NestedArray) -> types.NestedArray:
     """
     Returns random actions in response to batch of observations.
     """
-    self.rng, subkey = jax.random.split(self.key)
     batch_size = jnp.shape(observation)[0]
-    return jax.random.uniform(subkey, (batch_size, *self.action_spec.shape))
+    return (self.action_spec.maximum - self.action_spec.minimum) * jax.random.uniform(
+      key, (batch_size, *self.action_spec.shape)) + self.action_spec.minimum
 
   def _update_fn(self, curr_ls: LearnerState,
                          transitions: Transitions) -> Tuple[LearnerState, Dict[str, float]]:
